@@ -1,3 +1,4 @@
+import { CANONICAL_ACTOR_ROLES } from '../security/actor-roles';
 import {
   Injectable,
   UnauthorizedException,
@@ -17,6 +18,8 @@ import { ConfigService } from '../config/config.service';
 
 interface CredentialRow {
   actor_id: string;
+  display_name: string;
+  staff_code: string;
   password_hash: string;
   password_salt: string;
   password_iterations: number;
@@ -51,7 +54,7 @@ export class AuthService {
               primary_operational_role AS "actorRole",
               status
        FROM staff_actors
-       WHERE status = 'ACTIVE'
+       WHERE status = 'ACTIVE' AND primary_operational_role <> 'GUARDIAN'
        ORDER BY
          CASE primary_operational_role
            WHEN 'SUPERVISOR' THEN 1
@@ -164,12 +167,15 @@ export class AuthService {
           c.password_iterations,
           c.password_digest,
           c.locked_until,
+          s.display_name,
+          s.staff_code,
           s.primary_operational_role,
           s.status
         FROM auth_credentials c
         JOIN staff_actors s
           ON s.actor_id = c.actor_id
-        WHERE c.actor_id = $1
+        WHERE c.actor_id = $1 OR UPPER(s.staff_code) = UPPER($1)
+        ORDER BY (c.actor_id = $1) DESC
         LIMIT 1
         `,
         [
@@ -183,6 +189,7 @@ export class AuthService {
     if (
       !row ||
       row.status !== 'ACTIVE' ||
+      !CANONICAL_ACTOR_ROLES.some(role => role === row.primary_operational_role) ||
       (
         row.locked_until &&
         new Date(
@@ -283,15 +290,14 @@ export class AuthService {
         $1,
         $2,
         $3,
-        to_timestamp($4),
-        to_timestamp($5)
+        clock_timestamp(),
+        to_timestamp($4)
       )
       `,
       [
         sessionId,
         canonicalActorId,
         row.primary_operational_role,
-        now,
         expiresAt,
       ],
     );

@@ -14,7 +14,11 @@ export type ResidentAccessHumanRole =
   | 'CAREGIVER'
   | 'NURSE'
   | 'GUARDIAN'
-  | 'SUPERVISOR';
+  | 'PSYCHOLOGIST'
+  | 'SOCIAL_WORKER'
+  | 'SUPERVISOR'
+  | 'ADMIN'
+  | 'CARE_MANAGER';
 
 export type ResidentScopeSql = {
   sql: string;
@@ -38,6 +42,7 @@ export class ResidentAccessScopeService {
     | 'DIRECT_CARE'
     | 'CLINICAL_CARE'
     | 'FAMILY_PORTAL'
+    | 'PSYCHOSOCIAL_CARE'
     | null
   {
     if (actorRole === 'CAREGIVER') {
@@ -48,10 +53,8 @@ export class ResidentAccessScopeService {
       return 'CLINICAL_CARE';
     }
 
-    if (actorRole === 'GUARDIAN') {
-      return 'FAMILY_PORTAL';
-    }
-
+    if (actorRole === 'GUARDIAN') return 'FAMILY_PORTAL';
+    if (actorRole === 'PSYCHOLOGIST' || actorRole === 'SOCIAL_WORKER') return 'PSYCHOSOCIAL_CARE';
     return null;
   }
 
@@ -81,12 +84,7 @@ export class ResidentAccessScopeService {
       return false;
     }
 
-    const isSupervisoryRole =
-      actorRole === 'SUPERVISOR' ||
-      (actorRole as string) === 'ADMIN' ||
-      (actorRole as string) === 'CARE_MANAGER' ||
-      (actorRole as string) === 'RECEPTIONIST' ||
-      (actorRole as string) === 'DIRECTOR';
+    const isSupervisoryRole = ['SUPERVISOR', 'ADMIN', 'CARE_MANAGER'].includes(actorRole);
 
     if (isSupervisoryRole) {
       const result =
@@ -245,7 +243,7 @@ export class ResidentAccessScopeService {
       };
     }
 
-    if (actorRole === 'SUPERVISOR') {
+    if (['SUPERVISOR', 'ADMIN', 'CARE_MANAGER'].includes(actorRole)) {
       const actorIdParameter =
         startParameter;
 

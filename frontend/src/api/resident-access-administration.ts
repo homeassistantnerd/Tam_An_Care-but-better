@@ -8,15 +8,25 @@ import {
 } from './client';
 
 export type AssignmentRole =
-  Extract<HumanActorRole, 'CAREGIVER' | 'NURSE'>
-  | 'CARE_MANAGER';
+  Extract<
+    HumanActorRole,
+    | 'CAREGIVER'
+    | 'NURSE'
+    | 'PSYCHOLOGIST'
+    | 'SOCIAL_WORKER'
+  >;
+
+export type ResidentAccessScope =
+  | 'DIRECT_CARE'
+  | 'CLINICAL_CARE'
+  | 'PSYCHOSOCIAL_CARE';
 
 export interface ResidentAccessAssignment {
   residentAccessAssignmentId: string;
   residentId: string;
   actorId: string;
   actorRole: AssignmentRole;
-  accessScope: string;
+  accessScope: ResidentAccessScope;
   status: string;
   effectiveFrom: string | null;
   effectiveTo: string | null;
@@ -35,7 +45,7 @@ export interface CreateResidentAccessAssignmentInput {
   residentId: string;
   actorId: string;
   actorRole: AssignmentRole;
-  accessScope?: string;
+  accessScope: ResidentAccessScope;
   effectiveFrom?: string;
   effectiveTo?: string;
 }
@@ -50,18 +60,28 @@ const BASE =
 export async function listResidentAccessAssignments(
   actor: HumanActorSession,
 ): Promise<ResidentAccessAssignment[]> {
-  try {
-    const res = await apiRequest<{ data: ResidentAccessAssignment[] } | ResidentAccessAssignment[]>(
-      BASE,
-      { actor },
-    );
-    if (Array.isArray(res)) return res;
-    if (res && Array.isArray((res as any).data)) return (res as any).data;
-    return [];
-  } catch (error) {
-    console.warn('[TamAnCare API] Offline/Fallback mode active for listResidentAccessAssignments:', error);
-    return [];
+  const res = await apiRequest<
+    { data: ResidentAccessAssignment[] }
+    | ResidentAccessAssignment[]
+  >(
+    BASE,
+    { actor },
+  );
+
+  if (Array.isArray(res)) {
+    return res;
   }
+
+  if (
+    res &&
+    Array.isArray((res as any).data)
+  ) {
+    return (res as any).data;
+  }
+
+  throw new Error(
+    'Invalid resident-access assignment response.'
+  );
 }
 
 export async function createResidentAccessAssignment(

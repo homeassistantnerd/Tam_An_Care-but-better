@@ -114,7 +114,6 @@ const STAFF_CODE_NAME_MAP: Record<string, string> = {
   'cg-hoa-003': 'Đặng Thị Hoa',
   'PHYSIO-01': 'Phạm Văn Đức',
   'STAFF-NUT-001': 'Phạm Thị Lan',
-  'STAFF-NUT-007': 'Hoàng Minh Châu',
 };
 
 export function formatStaffDisplayName(val: string | null | undefined): string {

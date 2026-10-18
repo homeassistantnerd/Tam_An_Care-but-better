@@ -46,76 +46,8 @@ export const SUPPLY_CATEGORY_LABELS: Record<SupplyCategory, string> = {
 };
 
 // Mock in-memory storage
-let mockResidentSupplies: ResidentFamilySupplyItem[] = [
-  {
-    id: 'SUP-001',
-    residentId: 'res-demo-001',
-    residentName: 'Nguyễn Văn An',
-    itemName: 'Sữa Ensure Gold Nước 237ml',
-    category: 'MILK_NUTRITION',
-    categoryLabel: 'Sữa uống thêm & Bổ dưỡng',
-    quantityReceived: 24,
-    remainingQuantity: 18,
-    unit: 'chai',
-    receivedAt: '2026-09-10T09:30:00+07:00',
-    deliveredBy: 'Lê Gia Bảo (Con trai)',
-    receivedByStaffId: 'STAFF-CG-001',
-    receivedByStaffName: 'Trần Thị Mai',
-    storageLocation: 'Tủ cá nhân Phòng 101',
-    expiryDate: '2027-03-15',
-    notes: 'Cho cụ uống 1 chai vào 15:00 hàng ngày',
-    status: 'IN_USE',
-    usageLogs: [
-      { logId: 'LOG-01', usedAt: '2026-09-10T15:00:00+07:00', usedQuantity: 2, usedByStaffName: 'Trần Thị Mai', note: 'Cụ uống hết 1 chai bữa phụ chiều' },
-      { logId: 'LOG-02', usedAt: '2026-09-11T15:00:00+07:00', usedQuantity: 2, usedByStaffName: 'Trần Thị Mai', note: 'Uống 1 chai bữa phụ chiều' },
-      { logId: 'LOG-03', usedAt: '2026-09-12T15:00:00+07:00', usedQuantity: 2, usedByStaffName: 'Trần Thị Mai', note: 'Uống 1 chai bữa phụ chiều' },
-    ],
-  },
-  {
-    id: 'SUP-002',
-    residentId: 'res-demo-001',
-    residentName: 'Nguyễn Văn An',
-    itemName: 'Tã dán Caryn size L (Bịch 20 miếng)',
-    category: 'DIAPERS_HYGIENE',
-    categoryLabel: 'Bỉm, Tã & Vệ sinh cá nhân',
-    quantityReceived: 40,
-    remainingQuantity: 32,
-    unit: 'miếng',
-    receivedAt: '2026-09-08T14:15:00+07:00',
-    deliveredBy: 'Lê Gia Bảo (Con trai)',
-    receivedByStaffId: 'STAFF-CG-001',
-    receivedByStaffName: 'Trần Thị Mai',
-    storageLocation: 'Kệ đồ cá nhân P.101',
-    status: 'IN_USE',
-    usageLogs: [
-      { logId: 'LOG-04', usedAt: '2026-09-11T22:00:00+07:00', usedQuantity: 4, usedByStaffName: 'Trần Thị Mai', note: 'Thay ca đêm' },
-      { logId: 'LOG-05', usedAt: '2026-09-12T06:00:00+07:00', usedQuantity: 4, usedByStaffName: 'Trần Thị Mai', note: 'Thay ca sáng' },
-    ],
-  },
-  {
-    id: 'SUP-003',
-    residentId: 'res-demo-002',
-    residentName: 'Trần Thị Bình',
-    itemName: 'Táo Envy & Nho ngón tay mềm',
-    category: 'FRESH_FRUIT',
-    categoryLabel: 'Hoa quả & Trái cây tươi',
-    quantityReceived: 3,
-    remainingQuantity: 1.5,
-    unit: 'kg',
-    receivedAt: '2026-09-11T10:00:00+07:00',
-    deliveredBy: 'Trần Anh Đức (Con trai)',
-    receivedByStaffId: 'STAFF-CG-002',
-    receivedByStaffName: 'Hoàng Văn Tuấn',
-    storageLocation: 'Tủ lạnh Bếp ăn - Tủ 2',
-    expiryDate: '2026-09-16',
-    notes: 'Bếp gọt vỏ, cắt miếng nhỏ cho cụ ăn phụ 14h',
-    status: 'IN_USE',
-    usageLogs: [
-      { logId: 'LOG-06', usedAt: '2026-09-11T14:30:00+07:00', usedQuantity: 0.8, usedByStaffName: 'Hoàng Văn Tuấn', note: 'Cắt đĩa nhỏ bữa chiều' },
-      { logId: 'LOG-07', usedAt: '2026-09-12T14:30:00+07:00', usedQuantity: 0.7, usedByStaffName: 'Hoàng Văn Tuấn', note: 'Ép nước táo mềm' },
-    ],
-  },
-];
+// NO SEED DATA — Production-ready empty state
+let mockResidentSupplies: ResidentFamilySupplyItem[] = [];
 
 export async function fetchResidentFamilySupplies(residentId?: string): Promise<ResidentFamilySupplyItem[]> {
   await new Promise((r) => setTimeout(r, 100));

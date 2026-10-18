@@ -16,11 +16,12 @@ async function request(status,canonicalRole,claimedRole='CAREGIVER'){
   let continued=false, writes=0, reads=0;
   const db={query:async(sql)=>{
     reads++;
-    if (/auth_sessions/.test(sql)) return {rows:[{actor_id:'staff-fixture-1',actor_role:claimedRole}],rowCount:1};
-    if (/staff_actors/.test(sql)) {
+    // The staff revalidation query also references auth_sessions in a subquery, so match it first.
+    if (/FROM staff_actors/.test(sql)) {
       const authorized=status==='ACTIVE' && canonicalRole===claimedRole;
       return {rows:authorized?[{actor_id:'staff-fixture-1',primary_operational_role:canonicalRole,status}]:[],rowCount:authorized?1:0};
     }
+    if (/auth_sessions/.test(sql)) return {rows:[{actor_id:'staff-fixture-1',actor_role:claimedRole}],rowCount:1};
     throw new Error('Unexpected query in security test');
   }};
   const req={originalUrl:'/api/residents',headers:{'x-actor-id':'forged','x-actor-role':'SUPERVISOR'},

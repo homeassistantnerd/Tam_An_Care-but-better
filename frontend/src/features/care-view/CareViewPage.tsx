@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { getResidentCareView } from '../../api/residents';
+import { getResidentCareView, recordResidentVitals } from '../../api/residents';
 import { useActor } from '../../auth/ActorContext';
 import { triggerPrint } from '../../utils/print';
-import { ROLE_LABELS, getAssignedResidentIdsForActor, getAssignedResidentIdsForGuardian } from '../../auth/role-policy';
+import { ROLE_LABELS } from '../../auth/role-policy';
 import { ApiError } from '../../api/errors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/FeedbackStates';
 import ElderlyAvatar from '../../components/common/ElderlyAvatar';
@@ -20,7 +20,6 @@ import {
 import {
   calculateMonthlyVitalMinMax,
   getResidentVitalHistory,
-  saveVitalRecord,
   getResidentADL,
   saveResidentADL,
   type ADLEvaluation,
@@ -52,6 +51,8 @@ export function CareViewPage() {
   const [vitalsGlucose, setVitalsGlucose] = useState('');
   const [vitalsNote, setVitalsNote] = useState('');
   const [vitalsSaveSuccess, setVitalsSaveSuccess] = useState(false);
+  const [vitalsError, setVitalsError] = useState('');
+  const [vitalsSaving, setVitalsSaving] = useState(false);
 
   // ADL evaluation state for Caregiver
   const [showAdlModal, setShowAdlModal] = useState(false);
@@ -79,28 +80,6 @@ export function CareViewPage() {
       return failureCount < 1;
     },
   });
-
-  const assignedResidentIds = useMemo(() => {
-    if (!actor) return new Set<string>();
-    const caregiverAssigned = getAssignedResidentIdsForActor(actor.actorId, actor.displayName).map((id) => id.toLowerCase());
-    const guardianAssigned = getAssignedResidentIdsForGuardian(actor.actorId, actor.displayName).map((id) => id.toLowerCase());
-    return new Set([...caregiverAssigned, ...guardianAssigned]);
-  }, [actor?.actorId, actor?.displayName]);
-
-  // Hooks must run in the same order on loading, error, forbidden and success renders.
-  // Keep all memoized local-state reads before any conditional return (React #310).
-  const monthlyVitalsSummary = useMemo(
-    () => calculateMonthlyVitalMinMax(normalizedResidentId),
-    [normalizedResidentId, vitalsSaveSuccess],
-  );
-  const vitalHistory = useMemo(
-    () => normalizedResidentId ? getResidentVitalHistory(normalizedResidentId) : [],
-    [normalizedResidentId, vitalsSaveSuccess],
-  );
-  const currentAdl = useMemo(
-    () => normalizedResidentId ? getResidentADL(normalizedResidentId) : getResidentADL(''),
-    [normalizedResidentId, adlSaveSuccess],
-  );
 
   if (!normalizedResidentId) {
     return <ErrorState title="Không thể mở hồ sơ" description="Mã resident không hợp lệ." />;
@@ -180,42 +159,9 @@ export function CareViewPage() {
 
   const age = dob ? new Date().getFullYear() - new Date(dob).getFullYear() : null;
 
-  const isSupervisorOrAdmin =
-    (actor.actorRole as string) === 'SUPERVISOR' ||
-    (actor.actorRole as string) === 'CARE_MANAGER' ||
-    (actor.actorRole as string) === 'ADMIN' ||
-    (actor.actorRole as string) === 'RECEPTIONIST' ||
-    (actor.actorRole as string) === 'DIRECTOR' ||
-    (actor.actorRole as string) === 'NURSE' ||
-    (actor.actorRole as string) === 'NUTRITIONIST' ||
-    (actor.actorRole as string) === 'PHYSICAL_THERAPIST' ||
-    (actor.actorRole as string) === 'REHABILITATION_SPECIALIST' ||
-    (actor.actorRole as string) === 'CAREGIVER' ||
-    (actor.actorRole as string) === 'SOCIAL_WORKER' ||
-    (actor.actorRole as string) === 'PSYCHOLOGIST' ||
-    (actor.actorRole as string) === 'ACCOUNTANT' ||
-    (actor.actorRole as string) === 'HOUSEKEEPING' ||
-    (actor.actorRole as string) === 'SECURITY';
-
-
-  const targetResidentId = (
-    textFromRecord(data.resident, 'residentId') ||
-    textFromRecord(data.resident, 'resident_id') ||
-    normalizedResidentId
-  ).toLowerCase();
-
-  const targetResidentCode = (
-    textFromRecord(data.resident, 'residentCode') ||
-    textFromRecord(data.resident, 'resident_code') ||
-    ''
-  ).toLowerCase();
-
-  const isAuthorized =
-    isSupervisorOrAdmin ||
-    assignedResidentIds.size === 0 ||
-    assignedResidentIds.has(targetResidentId) ||
-    assignedResidentIds.has(targetResidentCode) ||
-    assignedResidentIds.has(normalizedResidentId.toLowerCase());
+  const isSupervisorOrAdmin = actor.actorRole === 'SUPERVISOR';
+  const isAuthorized = data.access.serverAuthorized &&
+    data.access.residentScopeEnforcement === 'CANONICAL_RESIDENT_SCOPE';
 
   if (!isAuthorized) {
     return (
@@ -280,33 +226,43 @@ export function CareViewPage() {
   const tempObs = clinicalItems.find((c: any) => c.observationCode === 'BODY_TEMP' || c.observationType?.includes('Thân nhiệt'));
   const spo2Obs = clinicalItems.find((c: any) => c.observationCode === 'SPO2_LEVEL' || c.observationType?.includes('SpO2'));
 
-  const displayBp: string = typeof bpObs?.textValue === 'string' ? bpObs.textValue : '130/80';
-  const displayHeart: string | number = typeof heartObs?.numericValue === 'number' || typeof heartObs?.numericValue === 'string' ? heartObs.numericValue : 76;
-  const displayTemp: string | number = typeof tempObs?.numericValue === 'number' || typeof tempObs?.numericValue === 'string' ? tempObs.numericValue : 36.6;
-  const displaySpo2: string | number = typeof spo2Obs?.numericValue === 'number' || typeof spo2Obs?.numericValue === 'string' ? spo2Obs.numericValue : 98;
+  const displayBp: string = typeof bpObs?.textValue === 'string' ? bpObs.textValue : '—';
+  const displayHeart: string | number = typeof heartObs?.numericValue === 'number' || typeof heartObs?.numericValue === 'string' ? heartObs.numericValue : '—';
+  const displayTemp: string | number = typeof tempObs?.numericValue === 'number' || typeof tempObs?.numericValue === 'string' ? tempObs.numericValue : '—';
+  const displaySpo2: string | number = typeof spo2Obs?.numericValue === 'number' || typeof spo2Obs?.numericValue === 'string' ? spo2Obs.numericValue : '—';
 
-  const handleSaveVitals = (e: React.FormEvent) => {
+  const monthlyVitalsSummary = import.meta.env.PROD ? {
+    bpMinMax: 'Chưa tổng hợp', pulseMinMax: 'Chưa tổng hợp', tempMinMax: 'Chưa tổng hợp',
+    spo2MinMax: 'Chưa tổng hợp', weightMinMax: 'Chưa tổng hợp', glucoseMinMax: 'Chưa tổng hợp',
+    weightRecords: [], glucoseRecords: [], totalMeasurementsCount: 0,
+  } : calculateMonthlyVitalMinMax(normalizedResidentId);
+
+  const vitalHistory = import.meta.env.PROD ? [] : getResidentVitalHistory(normalizedResidentId);
+
+  const handleSaveVitals = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!normalizedResidentId) return;
+    if (!normalizedResidentId || actor?.actorRole !== 'NURSE' || vitalsSaving) return;
+    setVitalsError('');
+    setVitalsSaving(true);
+    try {
+      const measurements: Record<string, number> = {};
+      for (const [key, raw] of Object.entries({ sysBP: vitalsSysBP, diaBP: vitalsDiaBP,
+        heartRate: vitalsHeartRate, temp: vitalsTemp, spo2: vitalsSpo2, respRate: vitalsRespRate,
+        weight: vitalsWeight, bloodGlucose: vitalsGlucose })) {
+        if (raw.trim()) measurements[key] = Number(raw);
+      }
+      await recordResidentVitals(normalizedResidentId, actor, measurements, vitalsNote.trim());
+      await query.refetch();
+      setVitalsSaveSuccess(prev => !prev);
+      setShowVitalsModal(false);
+      setVitalsNote('');
+    } catch (error) {
+      setVitalsError(error instanceof Error ? error.message : 'Không thể lưu sinh hiệu.');
+    } finally { setVitalsSaving(false); }
 
-    saveVitalRecord(normalizedResidentId, {
-      sysBP: Number(vitalsSysBP) || 120,
-      diaBP: Number(vitalsDiaBP) || 80,
-      heartRate: Number(vitalsHeartRate) || 75,
-      temp: Number(vitalsTemp) || 36.5,
-      spo2: Number(vitalsSpo2) || 98,
-      respRate: Number(vitalsRespRate) || 18,
-      weight: vitalsWeight ? Number(vitalsWeight) : undefined,
-      bloodGlucose: vitalsGlucose ? Number(vitalsGlucose) : undefined,
-      recordedBy: actor?.displayName || 'Nhân viên chăm sóc',
-      recordedByRole: (actor?.actorRole as string) || 'CAREGIVER',
-      note: vitalsNote.trim(),
-    });
-
-    setVitalsSaveSuccess((prev) => !prev);
-    setShowVitalsModal(false);
-    setVitalsNote('');
   };
+
+  const currentAdl = getResidentADL(normalizedResidentId);
 
   const handleSaveAdl = (e: React.FormEvent) => {
     e.preventDefault();
@@ -327,6 +283,7 @@ export function CareViewPage() {
         <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             type="button"
+            disabled={actor.actorRole !== 'NURSE'}
             onClick={() => setShowVitalsModal(true)}
             className="btn btn-success no-print"
             style={{
@@ -827,7 +784,8 @@ export function CareViewPage() {
               </h3>
               <button
                 type="button"
-                onClick={() => setShowVitalsModal(true)}
+                disabled={actor.actorRole !== 'NURSE'}
+            onClick={() => setShowVitalsModal(true)}
                 className="btn btn-sm btn-success"
                 style={{ background: '#166534', color: '#ffffff', fontWeight: 700 }}
               >
@@ -1120,13 +1078,14 @@ export function CareViewPage() {
       </section>
 
       {/* DAILY VITALS RECORDING MODAL FOR CAREGIVER */}
-      {showVitalsModal && (
+      {showVitalsModal && actor.actorRole === 'NURSE' && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
           <div style={{ background: '#ffffff', borderRadius: '0.75rem', maxWidth: '650px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)' }}>
             <div style={{ padding: '1.25rem 1.5rem', background: '#166534', color: '#ffffff', borderRadius: '0.75rem 0.75rem 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>🩺 Ghi Nhận Dấu Hiệu Sinh Tồn Hàng Ngày</h3>
               <button type="button" onClick={() => setShowVitalsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
             </div>
+            {vitalsError && <p role="alert">{vitalsError}</p>}
             <form onSubmit={handleSaveVitals} style={{ padding: '1.5rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
@@ -1168,7 +1127,7 @@ export function CareViewPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                 <button type="button" onClick={() => setShowVitalsModal(false)} className="btn btn-secondary">Hủy</button>
-                <button type="submit" className="btn btn-success" style={{ background: '#166534', color: '#fff', fontWeight: 700 }}>💾 Lưu & Đồng Bộ Báo Cáo</button>
+                <button type="submit" disabled={vitalsSaving} className="btn btn-success" style={{ background: '#166534', color: '#fff', fontWeight: 700 }}>💾 Lưu & Đồng Bộ Báo Cáo</button>
               </div>
             </form>
           </div>
@@ -1235,7 +1194,7 @@ export function CareViewPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                 <button type="button" onClick={() => setShowAdlModal(false)} className="btn btn-secondary">Hủy</button>
-                <button type="submit" className="btn btn-success" style={{ background: '#166534', color: '#fff', fontWeight: 700 }}>💾 Lưu Đánh Giá ADL</button>
+                <button type="submit" disabled={vitalsSaving} className="btn btn-success" style={{ background: '#166534', color: '#fff', fontWeight: 700 }}>💾 Lưu Đánh Giá ADL</button>
               </div>
             </form>
           </div>

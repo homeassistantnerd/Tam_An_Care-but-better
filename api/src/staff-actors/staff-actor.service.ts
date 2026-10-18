@@ -1,7 +1,9 @@
+import { CanonicalActorRole } from '../security/actor-roles';
 import { BadRequestException } from '@nestjs/common';
 import {
   Injectable,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import {
@@ -14,23 +16,7 @@ import {
   DatabaseService,
 } from '../database/database.service';
 
-export type StaffActorRole =
-  'ADMIN'
-  | 'SUPERVISOR'
-  | 'CARE_MANAGER'
-  | 'MEDICAL_HEAD'
-  | 'NURSE'
-  | 'CAREGIVER'
-  | 'NUTRITIONIST'
-  | 'ACCOUNTANT'
-  | 'RECEPTIONIST'
-  | 'PSYCHOLOGIST'
-  | 'SOCIAL_WORKER'
-  | 'REHABILITATION_SPECIALIST'
-  | 'COMMUNICATIONS'
-  | 'HOUSEKEEPING'
-  | 'SECURITY'
-  | 'GUARDIAN';
+export type StaffActorRole = CanonicalActorRole;
 
 export type StaffActorStatus =
   | 'ACTIVE'
@@ -497,6 +483,11 @@ export class StaffActorService {
       return null;
     }
 
+    if (['ADMIN', 'SUPERVISOR'].includes(actor.primary_operational_role)) {
+      const requester = await this.resolveActiveActorWithRole(performedBy, 'ADMIN');
+      if (!requester) throw new ForbiddenException('Only active Admin may reset management credentials');
+    }
+
     const material =
       this.passwordMaterial(password);
 
@@ -594,87 +585,41 @@ export class StaffActorService {
   }
 
   async updateStatus(
-    actorId: string,
-    status: StaffActorStatus,
-    reason: string,
-    performedBy: string,
+    actorId: string, status: StaffActorStatus, reason: string, performedBy: string,
   ): Promise<StaffActorRecord | null> {
-    const actor =
-      await this.findByActorId(actorId);
-
-    if (!actor) {
-      return null;
+    if (!['ACTIVE', 'INACTIVE', 'SUSPENDED', 'ARCHIVED'].includes(status) || reason.length > 2000) {
+      throw new BadRequestException('Invalid staff status request');
     }
-
-    await this.database.withTransaction(
-      async (client) => {
-        await client.query(
-          `
-          UPDATE staff_actors
-          SET
-            status = $2,
-            updated_at = now()
-          WHERE actor_id = $1
-          `,
-          [
-            actorId,
-            status,
-          ],
-        );
-
-        if (status !== 'ACTIVE') {
-          await client.query(
-            `
-            UPDATE auth_sessions
-            SET
-              revoked_at = now(),
-              revoked_reason = 'ACCOUNT_' || $2
-            WHERE actor_id = $1
-              AND revoked_at IS NULL
-            `,
-            [
-              actorId,
-              status,
-            ],
-          );
-        }
-
-        await client.query(
-          `
-          INSERT INTO staff_actor_audit (
-            event_type,
-            target_actor_id,
-            performed_by,
-            performed_by_role,
-            previous_value,
-            new_value
-          )
-          VALUES (
-            'STAFF_STATUS_CHANGED',
-            $1,
-            $2,
-            'SUPERVISOR',
-            jsonb_build_object(
-              'status', $3::text
-            ),
-            jsonb_build_object(
-              'status', $4::text,
-              'reason', $5::text
-            )
-          )
-          `,
-          [
-            actorId,
-            performedBy,
-            actor.status,
-            status,
-            reason,
-          ],
-        );
-      },
-    );
-
-    return this.findByActorId(actorId);
+    return this.database.withTransaction(async client => {
+      const authority = await client.query<StaffActorRecord>(`
+        SELECT * FROM staff_actors WHERE actor_id=$1 AND status='ACTIVE'
+          AND primary_operational_role IN ('ADMIN','SUPERVISOR') FOR SHARE
+      `, [performedBy]);
+      const requester = authority.rows[0];
+      if (!requester) throw new ForbiddenException('Active management authority is required');
+      const target = await client.query<StaffActorRecord>(
+        'SELECT * FROM staff_actors WHERE actor_id=$1 FOR UPDATE', [actorId]);
+      const actor = target.rows[0];
+      if (!actor) return null;
+      if ((performedBy === actorId && status !== 'ACTIVE') ||
+          (actor.primary_operational_role === 'ADMIN' && requester.primary_operational_role !== 'ADMIN')) {
+        throw new ForbiddenException('Protected staff account cannot be changed');
+      }
+      const result = await client.query<StaffActorRecord>(`
+        UPDATE staff_actors SET status=$2, updated_at=clock_timestamp()
+        WHERE actor_id=$1 RETURNING *
+      `, [actorId, status]);
+      await client.query(`
+        UPDATE auth_sessions SET revoked_at=clock_timestamp(), revoked_reason='ACCOUNT_' || $2
+        WHERE actor_id=$1 AND revoked_at IS NULL
+      `, [actorId, status]);
+      await client.query(`
+        INSERT INTO staff_actor_audit (event_type,target_actor_id,performed_by,performed_by_role,previous_value,new_value)
+        VALUES ('STAFF_STATUS_CHANGED',$1,$2,$3,
+          jsonb_build_object('status',$4::text), jsonb_build_object('status',$5::text,'reason',$6::text))
+      `, [actorId, performedBy, requester.primary_operational_role, actor.status, status, reason]);
+      return result.rows[0] ?? null;
+    });
   }
 
   async changeOwnPassword(

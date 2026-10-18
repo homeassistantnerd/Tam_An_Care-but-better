@@ -37,6 +37,11 @@ export class WorkforceService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    if (process.env.NODE_ENV === 'production') {
+      await this.db.query('SELECT 1 FROM shift_swap_requests LIMIT 0');
+      await this.db.query('SELECT 1 FROM staff_recognitions LIMIT 0');
+      return;
+    }
     try {
       await this.db.query(`
         CREATE TABLE IF NOT EXISTS shift_swap_requests (

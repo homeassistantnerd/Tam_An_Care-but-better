@@ -66,7 +66,7 @@ const getHeaders = (actorId: string, actorRole: string) => ({
   'x-actor-role': actorRole,
 });
 
-const LS_SHIFTS_KEY = 'taman_workforce_shifts_v1';
+const LS_SHIFTS_KEY = 'taman_workforce_shifts_v2';
 const LS_SWAPS_KEY = 'taman_workforce_swaps_v1';
 const LS_RECOGS_KEY = 'taman_workforce_recogs_v1';
 
@@ -79,125 +79,7 @@ function getLocalShifts(): ShiftItem[] {
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch {}
-  const initial: ShiftItem[] = [
-    {
-      shiftId: 'SHIFT-001',
-      staffActorId: 'STAFF-NUR-003',
-      staffName: 'Trần Thị Bích',
-      staffCode: 'NUR-003',
-      staffRole: 'NURSE',
-      shiftDate: todayStr,
-      shiftType: 'MORNING',
-      startTime: `${todayStr}T06:00:00.000Z`,
-      endTime: `${todayStr}T14:00:00.000Z`,
-      actualCheckinAt: `${todayStr}T05:55:12.000Z`,
-      status: 'IN_PROGRESS',
-      assignedBy: 'STAFF-DIR-001',
-      assignedByRole: 'SUPERVISOR',
-      notes: 'Trực Tầng 1 - Theo dõi chỉ số sinh tồn và cấp phát thuốc eMAR buổi sáng',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      handovers: [
-        {
-          handoverId: 'HO-001',
-          shiftId: 'SHIFT-001',
-          fromActorId: 'STAFF-NUR-003',
-          fromStaffName: 'Trần Thị Bích',
-          summaryNote: 'Tình hình sức khỏe các cụ Tầng 1 ổn định. Cụ Nguyễn Văn An đã uống thuốc huyết áp đúng giờ.',
-          criticalAlerts: ['Cụ Trần Thị Bình sốt nhẹ 37.8°C lúc 10:00, đã theo dõi nhiệt độ'],
-          status: 'SUBMITTED',
-          submittedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ],
-    },
-    {
-      shiftId: 'SHIFT-002',
-      staffActorId: 'cg-mai-001',
-      staffName: 'Trần Thị Mai',
-      staffCode: 'CG-001',
-      staffRole: 'CAREGIVER',
-      shiftDate: todayStr,
-      shiftType: 'MORNING',
-      startTime: `${todayStr}T06:00:00.000Z`,
-      endTime: `${todayStr}T14:00:00.000Z`,
-      actualCheckinAt: `${todayStr}T06:02:45.000Z`,
-      status: 'IN_PROGRESS',
-      assignedBy: 'STAFF-DIR-001',
-      assignedByRole: 'SUPERVISOR',
-      notes: 'Trực ca sáng - Hỗ trợ vệ sinh cá nhân, cho ăn và đưa các cụ Tầng 1 tập thể dục',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      handovers: [
-        {
-          handoverId: 'HO-002',
-          shiftId: 'SHIFT-002',
-          fromActorId: 'cg-mai-001',
-          fromStaffName: 'Trần Thị Mai',
-          summaryNote: 'Cụ Nguyễn Văn An ăn ngon miệng hết suất sáng. Đã kiểm đếm đầy đủ tư trang lúc tiếp nhận.',
-          criticalAlerts: ['Kiểm tra nẹp đi lại cho cụ Lê Hoàng Nam ca chiều'],
-          status: 'SUBMITTED',
-          submittedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ],
-    },
-    {
-      shiftId: 'SHIFT-003',
-      staffActorId: 'cg-hoa-003',
-      staffName: 'Đặng Thị Hoa',
-      staffCode: 'CG-003',
-      staffRole: 'CAREGIVER',
-      shiftDate: todayStr,
-      shiftType: 'MORNING',
-      startTime: `${todayStr}T06:00:00.000Z`,
-      endTime: `${todayStr}T14:00:00.000Z`,
-      actualCheckinAt: `${todayStr}T05:58:10.000Z`,
-      status: 'IN_PROGRESS',
-      assignedBy: 'STAFF-DIR-001',
-      assignedByRole: 'SUPERVISOR',
-      notes: 'Trực ca sáng - Hỗ trợ sinh hoạt hàng ngày cho các cụ Tầng 2',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      shiftId: 'SHIFT-004',
-      staffActorId: 'STAFF-NUT-001',
-      staffName: 'Phạm Thị Lan',
-      staffCode: 'NUT-001',
-      staffRole: 'NUTRITIONIST',
-      shiftDate: todayStr,
-      shiftType: 'MORNING',
-      startTime: `${todayStr}T06:00:00.000Z`,
-      endTime: `${todayStr}T14:00:00.000Z`,
-      actualCheckinAt: `${todayStr}T05:50:00.000Z`,
-      status: 'IN_PROGRESS',
-      assignedBy: 'STAFF-DIR-001',
-      assignedByRole: 'SUPERVISOR',
-      notes: 'Tiếp nhận thực phẩm tươi và giám sát chia suất ăn kiêng y khoa',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      shiftId: 'SHIFT-005',
-      staffActorId: 'STAFF-CG-002',
-      staffName: 'Lê Văn Nam',
-      staffCode: 'CG-002',
-      staffRole: 'CAREGIVER',
-      shiftDate: todayStr,
-      shiftType: 'AFTERNOON',
-      startTime: `${todayStr}T14:00:00.000Z`,
-      endTime: `${todayStr}T22:00:00.000Z`,
-      status: 'SCHEDULED',
-      assignedBy: 'STAFF-DIR-001',
-      assignedByRole: 'SUPERVISOR',
-      notes: 'Phụ trách sinh hoạt ca chiều và ăn tối cho các cụ Tầng 1 & Tầng 2',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
+  const initial: ShiftItem[] = [];
   saveLocalShifts(initial);
   return initial;
 }
@@ -746,53 +628,8 @@ export interface StaffMealRegistration {
   notes?: string;
 }
 
-let mockStaffMealRegistrations: StaffMealRegistration[] = [
-  {
-    id: 'SMR-001',
-    registrationDate: new Date().toISOString().slice(0, 10),
-    staffActorId: 'STAFF-NUT-007',
-    staffName: 'Hoàng Minh Châu',
-    jobRole: 'NUTRITIONIST',
-    jobGroupLabel: 'Bếp / Dinh Dưỡng + Tạp Vụ',
-    shiftName: 'Ca 1 (Sáng + Trưa)',
-    hasBreakfast: true,
-    hasLunch: true,
-    hasDinner: false,
-    registeredByStaffId: 'STAFF-MGR-001',
-    registeredByStaffName: 'Trần Nguyễn Anh Quản Lý',
-    notes: 'Bếp ca 1 ăn sáng 06:30 & trưa 11:30',
-  },
-  {
-    id: 'SMR-002',
-    registrationDate: new Date().toISOString().slice(0, 10),
-    staffActorId: 'cg-tuan-002',
-    staffName: 'Hoàng Văn Tuấn',
-    jobRole: 'CAREGIVER',
-    jobGroupLabel: 'Nhân viên Chăm Sóc & Y Tế',
-    shiftName: 'Ca 24h (Sáng, Trưa, Tối)',
-    hasBreakfast: true,
-    hasLunch: true,
-    hasDinner: true,
-    registeredByStaffId: 'STAFF-MGR-001',
-    registeredByStaffName: 'Trần Nguyễn Anh Quản Lý',
-    notes: 'Trực ca 24h đăng ký đủ 3 bữa ăn',
-  },
-  {
-    id: 'SMR-003',
-    registrationDate: new Date().toISOString().slice(0, 10),
-    staffActorId: 'STAFF-ACC-004',
-    staffName: 'Đỗ Hồng Nhung',
-    jobRole: 'ACCOUNTANT',
-    jobGroupLabel: 'Văn Phòng & PHCN',
-    shiftName: 'Ca Hành Chính',
-    hasBreakfast: false,
-    hasLunch: true,
-    hasDinner: false,
-    registeredByStaffId: 'STAFF-MGR-001',
-    registeredByStaffName: 'Trần Nguyễn Anh Quản Lý',
-    notes: '1 bữa trưa tiêu chuẩn văn phòng',
-  },
-];
+// NO SEED DATA — Production-ready empty state
+let mockStaffMealRegistrations: StaffMealRegistration[] = [];
 
 export async function fetchStaffMealRegistrations(dateStr?: string): Promise<StaffMealRegistration[]> {
   await new Promise((r) => setTimeout(r, 100));
@@ -837,46 +674,8 @@ export async function saveStaffMealRegistrations(
 // HẠNG MỤC 5: ĐỔI CA 3 BƯỚC (HẠN CUỐI TUẦN + ĐỒNG NGHIỆP XÁC NHẬN)
 // ----------------------------------------------------------------------
 
-let mockShiftSwapRequests: ShiftSwapRequest[] = [
-  {
-    id: 'SWAP-001',
-    requesterId: 'cg-tuan-002',
-    requesterName: 'Hoàng Văn Tuấn',
-    requesterRole: 'CAREGIVER',
-    originalShiftDate: '2026-09-15',
-    originalShiftType: 'Ca Sáng (06:00 - 14:00)',
-    targetStaffId: 'cg-mai-001',
-    targetStaffName: 'Trần Thị Mai',
-    targetShiftDate: '2026-09-16',
-    targetShiftType: 'Ca Sáng (06:00 - 14:00)',
-    reason: 'Đưa con đi khám sức khỏe đầu năm học',
-    requestedAt: '2026-09-06T18:00:00+07:00', // Chủ nhật tuần trước
-    submittedBeforeDeadline: true,
-    targetConsentStatus: 'AGREED',
-    targetConsentedAt: '2026-09-06T19:30:00+07:00',
-    managerApprovalStatus: 'APPROVED',
-    approverId: 'STAFF-MGR-001',
-    approverName: 'Trần Nguyễn Anh Quản Lý',
-    approvedAt: '2026-09-07T08:00:00+07:00',
-  },
-  {
-    id: 'SWAP-002',
-    requesterId: 'cg-hoa-003',
-    requesterName: 'Đặng Thị Hoa',
-    requesterRole: 'CAREGIVER',
-    originalShiftDate: '2026-09-18',
-    originalShiftType: 'Ca Chiều (14:00 - 22:00)',
-    targetStaffId: 'cg-tuan-002',
-    targetStaffName: 'Hoàng Văn Tuấn',
-    targetShiftDate: '2026-09-19',
-    targetShiftType: 'Ca Chiều (14:00 - 22:00)',
-    reason: 'Giải quyết công việc gia đình đột xuất',
-    requestedAt: '2026-09-11T15:20:00+07:00',
-    submittedBeforeDeadline: true,
-    targetConsentStatus: 'PENDING', // Chờ đồng nghiệp Tuấn xác nhận
-    managerApprovalStatus: 'PENDING',
-  },
-];
+// NO SEED DATA — Production-ready empty state
+let mockShiftSwapRequests: ShiftSwapRequest[] = [];
 
 export async function fetchFullShiftSwaps(): Promise<ShiftSwapRequest[]> {
   await new Promise((r) => setTimeout(r, 100));

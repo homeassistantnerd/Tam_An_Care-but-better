@@ -362,139 +362,6 @@ export const MOCK_WORK_EVENT_TYPES: WorkEventType[] = [
   },
 ];
 
-export const MOCK_INITIAL_WORK_EVENTS: WorkEvent[] = [
-  {
-    work_event_id: 'we-2026-001',
-    resident_id: 'res-demo-001',
-    work_event_type_id: 'ops-wet-vital-signs-check',
-    source_domain: 'CARE_EXECUTION',
-    source_entity_type: 'CARE_PLAN',
-    source_entity_id: 'CP-2026-001',
-    planned_classification: 'PLANNED',
-    occurred_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    started_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    completed_at: new Date(Date.now() - 3600000 * 1.8).toISOString(),
-    performed_by: 'Trần Thị Bích',
-    performed_by_role: 'NURSE',
-    quantity: 1,
-    unit: 'lần',
-    work_weight: 1,
-    reason_code: null,
-    note: 'Huyết áp 125/80 mmHg, mạch 75 lần/phút, thể trạng ổn định.',
-    status: 'VERIFIED',
-  },
-  {
-    work_event_id: 'we-2026-002',
-    resident_id: 'res-demo-001',
-    work_event_type_id: 'ops-wet-medication-admin',
-    source_domain: 'MEDICATION',
-    source_entity_type: 'EMAR_SCHEDULE',
-    source_entity_id: 'EMAR-001',
-    planned_classification: 'PLANNED',
-    occurred_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-    started_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-    completed_at: new Date(Date.now() - 3600000 * 3.9).toISOString(),
-    performed_by: 'Nguyễn Thị Phương Thuý',
-    performed_by_role: 'NURSE',
-    quantity: 1,
-    unit: 'lần',
-    work_weight: 1,
-    reason_code: null,
-    note: 'Đã phát 2 viên Amlodipine 5mg sau ăn sáng đúng quy tắc 5 Đúng.',
-    status: 'COMPLETED',
-  },
-  {
-    work_event_id: 'we-2026-003',
-    resident_id: 'res-demo-001',
-    work_event_type_id: 'ops-wet-meal-assistance',
-    source_domain: 'NUTRITION',
-    source_entity_type: 'MEAL_PLAN',
-    source_entity_id: 'MP-001',
-    planned_classification: 'PLANNED',
-    occurred_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-    started_at: new Date(Date.now() - 3600000 * 5.5).toISOString(),
-    completed_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-    performed_by: 'Trần Thị Mai',
-    performed_by_role: 'CAREGIVER',
-    quantity: 1,
-    unit: 'bữa',
-    work_weight: 1,
-    reason_code: null,
-    note: 'Ăn hết 1 bát cháo thịt băm, uống 200ml nước ấm.',
-    status: 'COMPLETED',
-  },
-  {
-    work_event_id: 'we-2026-004',
-    resident_id: 'res-demo-002',
-    work_event_type_id: 'ops-wet-hygiene-bathing',
-    source_domain: 'PERSONAL_CARE',
-    source_entity_type: 'DAILY_ROUTINE',
-    source_entity_id: 'DR-002',
-    planned_classification: 'PLANNED',
-    occurred_at: new Date(Date.now() - 3600000 * 6).toISOString(),
-    started_at: new Date(Date.now() - 3600000 * 6.5).toISOString(),
-    completed_at: new Date(Date.now() - 3600000 * 6).toISOString(),
-    performed_by: 'Đặng Thị Hoa',
-    performed_by_role: 'CAREGIVER',
-    quantity: 1,
-    unit: 'lần',
-    work_weight: 1,
-    reason_code: null,
-    note: 'Hỗ trợ tắm nước ấm sinh hoạt buổi sáng, sấy tóc khô.',
-    status: 'RECORDED',
-  },
-  {
-    work_event_id: 'we-2026-005',
-    resident_id: 'res-demo-003',
-    work_event_type_id: 'ops-wet-mobility-assistance',
-    source_domain: 'MOBILITY',
-    source_entity_type: 'REHAB_SCHEDULE',
-    source_entity_id: 'RS-003',
-    planned_classification: 'ADDITIONAL',
-    occurred_at: new Date(Date.now() - 3600000 * 8).toISOString(),
-    started_at: new Date(Date.now() - 3600000 * 8.5).toISOString(),
-    completed_at: new Date(Date.now() - 3600000 * 8).toISOString(),
-    performed_by: 'Phạm Văn Đức',
-    performed_by_role: 'PHYSIOTHERAPIST',
-    quantity: 1,
-    unit: 'lần',
-    work_weight: 1,
-    reason_code: null,
-    note: 'Hỗ trợ tập đi nạng 15 phút tại sảnh hành lang tầng 1.',
-    status: 'VERIFIED',
-  },
-];
-
-const MOCK_STORAGE_KEY = 'taman_care_mock_work_events';
-
-function getStoredMockEvents(): WorkEvent[] {
-  try {
-    const raw = localStorage.getItem(MOCK_STORAGE_KEY);
-    if (raw) {
-      const parsed: WorkEvent[] = JSON.parse(raw);
-      let updated = false;
-      for (const e of parsed) {
-        if (e.resident_id === 'RES-2026-001') { e.resident_id = 'res-demo-001'; updated = true; }
-        if (e.resident_id === 'RES-2026-002') { e.resident_id = 'res-demo-002'; updated = true; }
-        if (e.resident_id === 'RES-2026-003') { e.resident_id = 'res-demo-003'; updated = true; }
-        if (e.resident_id === 'RES-2026-004') { e.resident_id = 'res-demo-004'; updated = true; }
-        if (e.resident_id === 'RES-2026-005') { e.resident_id = 'res-demo-005'; updated = true; }
-      }
-      if (updated) {
-        saveStoredMockEvents(parsed);
-      }
-      return parsed;
-    }
-  } catch {}
-  return MOCK_INITIAL_WORK_EVENTS;
-}
-
-function saveStoredMockEvents(events: WorkEvent[]) {
-  try {
-    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(events));
-  } catch {}
-}
-
 function queryString(
   values: Record<string, string | number | undefined>,
 ) {
@@ -519,166 +386,68 @@ export async function listWorkEventTypes(
   actor: HumanActorSession,
   limit = 100,
 ): Promise<BoundedList<WorkEventType>> {
-  try {
-    return await apiRequest<BoundedList<WorkEventType>>(
-      `${TYPE_BASE}${queryString({
-        limit,
-        active: 'true',
-      })}`,
-      { actor },
-    );
-  } catch (error) {
-    console.warn('[TamAnCare API] Offline/Fallback mode active for listWorkEventTypes:', error);
-    return {
-      items: MOCK_WORK_EVENT_TYPES,
-      count: MOCK_WORK_EVENT_TYPES.length,
+  return apiRequest<BoundedList<WorkEventType>>(
+    `${TYPE_BASE}${queryString({
       limit,
-    };
-  }
+      active: 'true',
+    })}`,
+    { actor },
+  );
 }
 
 export async function listWorkEvents(
   actor: HumanActorSession,
   filters: WorkEventFilters = {},
 ): Promise<BoundedList<WorkEvent>> {
-  try {
-    return await apiRequest<BoundedList<WorkEvent>>(
-      `${EVENT_BASE}${queryString({
-        residentId: filters.residentId,
-        workEventTypeId: filters.workEventTypeId,
-        performedBy: filters.performedBy,
-        status: filters.status,
-        sourceDomain: filters.sourceDomain,
-        limit: filters.limit ?? 50,
-      })}`,
-      { actor },
-    );
-  } catch (error) {
-    console.warn('[TamAnCare API] Offline/Fallback mode active for listWorkEvents:', error);
-    let items = getStoredMockEvents();
-
-    if (filters.residentId) {
-      items = items.filter((e) => e.resident_id === filters.residentId);
-    }
-    if (filters.workEventTypeId) {
-      items = items.filter((e) => e.work_event_type_id === filters.workEventTypeId);
-    }
-    if (filters.performedBy) {
-      const kw = filters.performedBy.toLowerCase();
-      items = items.filter((e) => e.performed_by.toLowerCase().includes(kw));
-    }
-    if (filters.status) {
-      items = items.filter((e) => e.status === filters.status);
-    }
-    if (filters.sourceDomain) {
-      items = items.filter((e) => e.source_domain === filters.sourceDomain);
-    }
-
-    const limitVal = filters.limit ?? 50;
-    return {
-      items: items.slice(0, limitVal),
-      count: items.length,
-      limit: limitVal,
-    };
-  }
+  return apiRequest<BoundedList<WorkEvent>>(
+    `${EVENT_BASE}${queryString({
+      residentId: filters.residentId,
+      workEventTypeId: filters.workEventTypeId,
+      performedBy: filters.performedBy,
+      status: filters.status,
+      sourceDomain: filters.sourceDomain,
+      limit: filters.limit ?? 50,
+    })}`,
+    { actor },
+  );
 }
 
 export async function getWorkEvent(
   actor: HumanActorSession,
   id: string,
 ): Promise<WorkEvent> {
-  try {
-    return await apiRequest<WorkEvent>(
-      `${EVENT_BASE}/${encodeURIComponent(id)}`,
-      { actor },
-    );
-  } catch (error) {
-    console.warn('[TamAnCare API] Offline/Fallback mode active for getWorkEvent:', error);
-    const items = getStoredMockEvents();
-    const found = items.find((e) => e.work_event_id === id);
-    if (found) return found;
-    return items[0];
-  }
+  return apiRequest<WorkEvent>(
+    `${EVENT_BASE}/${encodeURIComponent(id)}`,
+    { actor },
+  );
 }
 
 export async function createWorkEvent(
   actor: HumanActorSession,
   input: CreateWorkEventInput,
 ): Promise<WorkEvent> {
-  try {
-    return await apiRequest<WorkEvent>(
-      EVENT_BASE,
-      {
-        actor,
-        method: 'POST',
-        body: JSON.stringify(input),
-      },
-    );
-  } catch (error) {
-    console.warn('[TamAnCare API] Offline/Fallback mode active for createWorkEvent:', error);
-    const items = getStoredMockEvents();
-    const typeObj = MOCK_WORK_EVENT_TYPES.find((t) => t.work_event_type_id === input.workEventTypeId);
-    const newEvent: WorkEvent = {
-      work_event_id: `we-${Date.now()}`,
-      resident_id: input.residentId || null,
-      work_event_type_id: input.workEventTypeId,
-      source_domain: input.sourceDomain || 'OPERATIONS',
-      source_entity_type: input.sourceEntityType || null,
-      source_entity_id: input.sourceEntityId || null,
-      planned_classification: input.plannedClassification || 'UNPLANNED',
-      occurred_at: input.occurredAt || new Date().toISOString(),
-      started_at: input.startedAt || new Date().toISOString(),
-      completed_at: input.completedAt || new Date().toISOString(),
-      performed_by: actor.displayName || actor.actorId,
-      performed_by_role: actor.actorRole,
-      quantity: input.quantity ?? 1,
-      unit: typeObj?.default_unit || 'lần',
-      work_weight: typeObj?.default_work_weight || 1,
-      reason_code: input.reasonCode || null,
-      note: input.note || null,
-      status: input.status || 'COMPLETED',
-      metrics: input.metrics,
-    };
-    const updated = [newEvent, ...items];
-    saveStoredMockEvents(updated);
-
-    if (input.residentId && input.metrics) {
-      try {
-        localStorage.setItem(`taman_care_mock_vitals_${input.residentId}`, JSON.stringify({
-          ...input.metrics,
-          updatedAt: new Date().toISOString(),
-        }));
-      } catch {}
-    }
-
-    return newEvent;
-  }
+  return apiRequest<WorkEvent>(
+    EVENT_BASE,
+    {
+      actor,
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  );
 }
 
 export async function verifyWorkEvent(
   actor: HumanActorSession,
   id: string,
 ): Promise<WorkEvent> {
-  try {
-    return await apiRequest<WorkEvent>(
-      `${EVENT_BASE}/${encodeURIComponent(id)}/verify`,
-      {
-        actor,
-        method: 'POST',
-        body: JSON.stringify({}),
-      },
-    );
-  } catch (error) {
-    console.warn('[TamAnCare API] Offline/Fallback mode active for verifyWorkEvent:', error);
-    const items = getStoredMockEvents();
-    const idx = items.findIndex((e) => e.work_event_id === id);
-    if (idx !== -1) {
-      items[idx] = { ...items[idx], status: 'VERIFIED' };
-      saveStoredMockEvents(items);
-      return items[idx];
-    }
-    throw error;
-  }
+  return apiRequest<WorkEvent>(
+    `${EVENT_BASE}/${encodeURIComponent(id)}/verify`,
+    {
+      actor,
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  );
 }
 
 export async function amendWorkEvent(
@@ -686,32 +455,14 @@ export async function amendWorkEvent(
   id: string,
   input: AmendWorkEventInput,
 ): Promise<WorkEvent> {
-  try {
-    return await apiRequest<WorkEvent>(
-      `${EVENT_BASE}/${encodeURIComponent(id)}/amend`,
-      {
-        actor,
-        method: 'POST',
-        body: JSON.stringify(input),
-      },
-    );
-  } catch (error) {
-    console.warn('[TamAnCare API] Offline/Fallback mode active for amendWorkEvent:', error);
-    const items = getStoredMockEvents();
-    const idx = items.findIndex((e) => e.work_event_id === id);
-    if (idx !== -1) {
-      items[idx] = {
-        ...items[idx],
-        status: 'AMENDED',
-        quantity: input.quantity ?? items[idx].quantity,
-        note: input.note ? `${items[idx].note ? items[idx].note + ' | ' : ''}Điều chỉnh: ${input.note}` : items[idx].note,
-        reason_code: input.reasonCode || items[idx].reason_code,
-      };
-      saveStoredMockEvents(items);
-      return items[idx];
-    }
-    throw error;
-  }
+  return apiRequest<WorkEvent>(
+    `${EVENT_BASE}/${encodeURIComponent(id)}/amend`,
+    {
+      actor,
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  );
 }
 
 export async function voidWorkEvent(
@@ -719,28 +470,12 @@ export async function voidWorkEvent(
   id: string,
   reasonCode: string,
 ): Promise<WorkEvent> {
-  try {
-    return await apiRequest<WorkEvent>(
-      `${EVENT_BASE}/${encodeURIComponent(id)}/void`,
-      {
-        actor,
-        method: 'POST',
-        body: JSON.stringify({ reasonCode }),
-      },
-    );
-  } catch (error) {
-    console.warn('[TamAnCare API] Offline/Fallback mode active for voidWorkEvent:', error);
-    const items = getStoredMockEvents();
-    const idx = items.findIndex((e) => e.work_event_id === id);
-    if (idx !== -1) {
-      items[idx] = {
-        ...items[idx],
-        status: 'VOIDED',
-        reason_code: reasonCode,
-      };
-      saveStoredMockEvents(items);
-      return items[idx];
-    }
-    throw error;
-  }
+  return apiRequest<WorkEvent>(
+    `${EVENT_BASE}/${encodeURIComponent(id)}/void`,
+    {
+      actor,
+      method: 'POST',
+      body: JSON.stringify({ reasonCode }),
+    },
+  );
 }

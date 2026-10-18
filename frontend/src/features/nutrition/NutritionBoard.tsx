@@ -30,101 +30,10 @@ export interface ResidentDietProfile {
   updatedAt?: string;
 }
 
-const STORAGE_KEY_DIET = 'taman_nutrition_diet_profiles';
-const STORAGE_KEY_EXTRA = 'taman_nutrition_extra_meals';
+const STORAGE_KEY_DIET = 'taman_nutrition_diet_profiles_v2';
+const STORAGE_KEY_EXTRA = 'taman_nutrition_extra_meals_v2';
 
-const INITIAL_DIET_PROFILES: Record<string, ResidentDietProfile> = {
-  'res-demo-008': {
-    residentId: 'res-demo-008',
-    prepType: 'TUBE_FEEDING',
-    medicalDiets: ['Tiểu đường', 'Suy thận nhẹ (Giảm đạm)'],
-    allergies: ['Không dung nạp lactose'],
-    caregiverNotes: 'Ăn qua ống Sonde 5 cữ/ngày (mỗi cữ 250ml súp chuyên biệt). Bơm chậm, kiểm tra vị trí ống trước ăn.',
-    mealsPerDay: 5,
-    reportedByCaregiver: 'Đặng Thị Hoa',
-    updatedAt: '06:15 - 02/09/2026',
-  },
-  'res-demo-001': {
-    residentId: 'res-demo-001',
-    prepType: 'PUREED_SOUP',
-    medicalDiets: ['Tăng huyết áp (Ăn nhạt)', 'Tiểu đường type 2'],
-    allergies: [],
-    caregiverNotes: 'Cụ khó nuốt, cần cháo xay nhuyễn mịn kèm thịt nạc/cá băm nhỏ. Bổ sung 1 ly sữa dinh dưỡng lúc 15:00.',
-    mealsPerDay: 4,
-    reportedByCaregiver: 'Trần Thị Mai',
-    updatedAt: '06:30 - 02/09/2026',
-  },
-  'res-demo-002': {
-    residentId: 'res-demo-002',
-    prepType: 'MASHED_SOFT',
-    medicalDiets: ['Bệnh tim mạch (Hạn chế mỡ động vật)'],
-    allergies: ['Dị ứng hải sản (tôm, cua)'],
-    caregiverNotes: 'Đang tạm vắng điều trị tim mạch tại BV 108. Gia đình báo dự kiến về ngày 3/9.',
-    mealsPerDay: 3,
-    reportedByCaregiver: 'Trần Thị Mai',
-    updatedAt: '07:00 - 02/09/2026',
-  },
-  'res-demo-003': {
-    residentId: 'res-demo-003',
-    prepType: 'PUREED_SOUP',
-    medicalDiets: ['Đái tháo đường', 'Tiêu hóa kém'],
-    allergies: [],
-    caregiverNotes: 'Cụ yếu liệt nửa người, ăn chậm, cần đút từng thìa nhỏ. Uống đủ 1.5L nước ấm/ngày.',
-    mealsPerDay: 4,
-    reportedByCaregiver: 'Trần Thị Mai',
-    updatedAt: '06:45 - 02/09/2026',
-  },
-  'res-demo-004': {
-    residentId: 'res-demo-004',
-    prepType: 'REGULAR_SOFT',
-    medicalDiets: ['Tăng huyết áp (Ăn nhạt < 3g muối/ngày)'],
-    allergies: [],
-    caregiverNotes: 'Cụ tự xúc cơm tốt, thích rau củ luộc mềm, tráng miệng hoa quả ngọt nhẹ.',
-    mealsPerDay: 3,
-    reportedByCaregiver: 'Hoàng Văn Tuấn',
-    updatedAt: '07:10 - 02/09/2026',
-  },
-  'res-demo-005': {
-    residentId: 'res-demo-005',
-    prepType: 'REGULAR_SOFT',
-    medicalDiets: ['Tiểu đường (Dùng gạo lứt/yến mạch)'],
-    allergies: ['Kiêng đậu phộng'],
-    caregiverNotes: 'Khẩu vị tốt, NV Chăm sóc đã nhắc uống thuốc hạ đường huyết trước bữa ăn 30 phút.',
-    mealsPerDay: 3,
-    reportedByCaregiver: 'Hoàng Văn Tuấn',
-    updatedAt: '07:15 - 02/09/2026',
-  },
-  'res-demo-006': {
-    residentId: 'res-demo-006',
-    prepType: 'MASHED_SOFT',
-    medicalDiets: ['Tăng huyết áp', 'Răng yếu (Khó nhai)'],
-    allergies: [],
-    caregiverNotes: 'Cơm nấu thật nát hoặc cháo sườn băm nhỏ, thịt kho mềm nhừ, canh nấu kỹ.',
-    mealsPerDay: 4,
-    reportedByCaregiver: 'Đặng Thị Hoa',
-    updatedAt: '06:20 - 02/09/2026',
-  },
-  'res-demo-007': {
-    residentId: 'res-demo-007',
-    prepType: 'REGULAR_SOFT',
-    medicalDiets: [],
-    allergies: [],
-    caregiverNotes: 'Sức khỏe ổn định, ăn uống bình thường theo thực đơn chung của Tâm An.',
-    mealsPerDay: 3,
-    reportedByCaregiver: 'Hoàng Văn Tuấn',
-    updatedAt: '07:20 - 02/09/2026',
-  },
-  'resident-vw9ec-20260828-153826': {
-    residentId: 'resident-vw9ec-20260828-153826',
-    prepType: 'MASHED_SOFT',
-    medicalDiets: ['Tăng huyết áp (Ăn nhạt)'],
-    allergies: [],
-    caregiverNotes: 'Cụ thích ăn cháo cá hồi hạt sen vào buổi sáng, bữa trưa cơm mềm chan canh bí.',
-    mealsPerDay: 3,
-    reportedByCaregiver: 'Đặng Thị Hoa',
-    updatedAt: '06:40 - 02/09/2026',
-  },
-};
+const INITIAL_DIET_PROFILES: Record<string, ResidentDietProfile> = {};
 
 const PREP_LABELS: Record<string, { label: string; badge: string; icon: string }> = {
   REGULAR_SOFT: { label: 'Cơm mềm / Cơm thường', badge: 'badge badge-success', icon: '🍚' },
@@ -133,27 +42,7 @@ const PREP_LABELS: Record<string, { label: string; badge: string; icon: string }
   TUBE_FEEDING: { label: 'Ăn qua ống Sonde', badge: 'badge badge-danger', icon: '🧪' },
 };
 
-const INITIAL_EXTRA_MEALS: ExtraMeal[] = [
-  {
-    id: 'extra-001',
-    mealTime: 'LUNCH',
-    guestType: 'FAMILY_GUEST',
-    guestName: 'Nguyễn Văn Tuấn (Con trai Cụ Tuyết)',
-    residentRelation: 'Cụ Phạm Thị Tuyết - P201',
-    quantity: 1,
-    dietType: 'Cơm thường theo tiêu chuẩn',
-    note: 'Đến thăm cụ và đăng ký dùng cơm trưa cùng mẹ (Quản lý duyệt)',
-  },
-  {
-    id: 'extra-002',
-    mealTime: 'LUNCH',
-    guestType: 'STAFF_DUTY',
-    guestName: 'Nhân viên trực ca trưa (Lê Thị Lan, Trần Thị Mai)',
-    quantity: 2,
-    dietType: 'Suất ăn ca nhân viên y tế/chăm sóc',
-    note: 'Suất ăn theo ca trực (Quản lý phân bổ)',
-  },
-];
+const INITIAL_EXTRA_MEALS: ExtraMeal[] = [];
 
 export function NutritionBoard() {
   const { actor } = useActor();
@@ -289,19 +178,7 @@ export function NutritionBoard() {
         reportedByCaregiver: 'Nhân viên chăm sóc',
         updatedAt: 'Mới cập nhật',
       };
-      const defaultCgMap: Record<string, { staffName: string; staffCode: string; actorId: string }> = {
-        'res-demo-004': { staffName: 'Hoàng Văn Tuấn', staffCode: 'STAFF-CG-002', actorId: 'cg-tuan-002' },
-        'res-demo-005': { staffName: 'Hoàng Văn Tuấn', staffCode: 'STAFF-CG-002', actorId: 'cg-tuan-002' },
-        'res-demo-007': { staffName: 'Hoàng Văn Tuấn', staffCode: 'STAFF-CG-002', actorId: 'cg-tuan-002' },
-        'res-demo-001': { staffName: 'Trần Thị Mai', staffCode: 'STAFF-CG-001', actorId: 'cg-mai-001' },
-        'res-demo-002': { staffName: 'Trần Thị Mai', staffCode: 'STAFF-CG-001', actorId: 'cg-mai-001' },
-        'res-demo-003': { staffName: 'Trần Thị Mai', staffCode: 'STAFF-CG-001', actorId: 'cg-mai-001' },
-        'res-demo-008': { staffName: 'Đặng Thị Hoa', staffCode: 'STAFF-CG-003', actorId: 'cg-hoa-003' },
-        'res-demo-006': { staffName: 'Đặng Thị Hoa', staffCode: 'STAFF-CG-003', actorId: 'cg-hoa-003' },
-        'resident-vw9ec-20260828-153826': { staffName: 'Đặng Thị Hoa', staffCode: 'STAFF-CG-003', actorId: 'cg-hoa-003' },
-      };
-
-      const cg = caregiverMap.get(res.residentId) || defaultCgMap[res.residentId] || { staffName: 'Chưa phân công', staffCode: '—', actorId: '' };
+      const cg = caregiverMap.get(res.residentId) || { staffName: 'Chưa phân công', staffCode: '—', actorId: '' };
       const myAssignedIds = new Set(getAssignedResidentIdsForActor(actorId, actorName));
       const isMyResident = myAssignedIds.has(res.residentId) || cg.actorId === actorId || cg.staffName === actorName;
 
@@ -1437,7 +1314,7 @@ export function NutritionBoard() {
                   className="form-input"
                   type="text"
                   required
-                  placeholder="Ví dụ: Anh Nguyễn Văn Tuấn (Con trai Cụ Tuyết)"
+                  placeholder="Ví dụ: Thân nhân người cao tuổi"
                   value={newGuestName}
                   onChange={e => setNewGuestName(e.target.value)}
                   style={{ width: '100%' }}
@@ -1480,7 +1357,7 @@ export function NutritionBoard() {
                 <input
                   className="form-input"
                   type="text"
-                  placeholder="Ví dụ: Dùng cơm cùng cụ tại phòng 201..."
+                  placeholder="Ví dụ: Dùng cơm cùng người cao tuổi..."
                   value={newNote}
                   onChange={e => setNewNote(e.target.value)}
                   style={{ width: '100%' }}

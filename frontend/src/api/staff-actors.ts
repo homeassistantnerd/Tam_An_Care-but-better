@@ -515,3 +515,6 @@ export async function deleteStaffAccount(
     },
   );
 }
+
+// Compatibility for legacy readers; production staff always come from the API.
+export const mockStaffActors: StaffActor[] = [];

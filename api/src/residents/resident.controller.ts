@@ -110,11 +110,11 @@ export class ResidentController {
     if (!actorId || !actorRole) {
       throw new UnauthorizedException('Actor context is required');
     }
-    if (!['CAREGIVER', 'NURSE', 'SUPERVISOR'].includes(actorRole)) {
+    if (!['CAREGIVER', 'NURSE', 'SUPERVISOR', 'PSYCHOLOGIST', 'SOCIAL_WORKER'].includes(actorRole)) {
       throw new ForbiddenException('Resident access role is not authorized');
     }
     const authorized = await this.residentAccessScope.canAccessResident(
-      actorId, actorRole as 'CAREGIVER' | 'NURSE' | 'SUPERVISOR', residentId,
+      actorId, actorRole as 'CAREGIVER' | 'NURSE' | 'SUPERVISOR' | 'PSYCHOLOGIST' | 'SOCIAL_WORKER', residentId,
     );
     if (!authorized) {
       throw new ForbiddenException('Resident access denied');

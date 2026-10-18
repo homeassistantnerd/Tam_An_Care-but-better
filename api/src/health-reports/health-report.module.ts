@@ -1,3 +1,4 @@
+import { ResidentAccessScopeModule } from '../resident-access-scope/resident-access-scope.module';
 import {
   Module,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import {
 
 @Module({
   imports: [
+    ResidentAccessScopeModule,
     DatabaseModule,
   ],
   controllers: [

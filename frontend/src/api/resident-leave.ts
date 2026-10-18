@@ -60,55 +60,8 @@ const getHeaders = (actorId: string, actorRole: string) => ({
   'x-actor-role': actorRole,
 });
 
-export let mockLeaveRequests: ResidentLeaveItem[] = [
-  {
-    leaveRequestId: 'rla-demo-001',
-    residentId: 'res-demo-001',
-    residentName: 'Nguyễn Văn An',
-    residentCode: 'NCT-001',
-    leaveType: 'FAMILY_VISIT',
-    startDate: '2026-09-02',
-    expectedEndDate: '2026-09-05',
-    actualEndDate: '2026-09-05',
-    noticeSubmittedAt: '2026-08-30T09:00:00Z',
-    noticeHours: 72,
-    isAdvanceNotice48h: true,
-    firstDayChargeable: false,
-    subsequentDaysConfirmed: true,
-    mealDeductionEligible: true,
-    status: 'RETURNED',
-    reportedBy: 'Lê Gia Bảo (SĐT: 0908 123 456)',
-    reporterRelationship: 'Con trai',
-    recordedBy: 'staff-001',
-    recordedByRole: 'CARE_MANAGER',
-    note: 'Đón Cụ về mừng thọ cháu ngoại',
-    createdAt: '2026-08-30T09:00:00Z',
-    updatedAt: '2026-09-05T16:00:00Z',
-  },
-  {
-    leaveRequestId: 'rla-demo-002',
-    residentId: 'res-demo-001',
-    residentName: 'Nguyễn Văn An',
-    residentCode: 'NCT-001',
-    leaveType: 'VACATION',
-    startDate: '2026-09-10',
-    expectedEndDate: '2026-09-12',
-    noticeSubmittedAt: '2026-09-07T10:00:00Z',
-    noticeHours: 72,
-    isAdvanceNotice48h: true,
-    firstDayChargeable: false,
-    subsequentDaysConfirmed: false,
-    mealDeductionEligible: true,
-    status: 'REGISTERED',
-    reportedBy: 'Lê Gia Bảo (SĐT: 0908 123 456)',
-    reporterRelationship: 'Con trai',
-    recordedBy: 'staff-001',
-    recordedByRole: 'GUARDIAN',
-    note: 'Nghỉ dưỡng gia đình tại Vũng Tàu',
-    createdAt: '2026-09-07T10:00:00Z',
-    updatedAt: '2026-09-07T10:00:00Z',
-  },
-];
+export // NO SEED DATA — Production-ready empty state
+let mockLeaveRequests: ResidentLeaveItem[] = [];
 
 export async function fetchLeaveRequests(
   actorId: string,
@@ -329,48 +282,8 @@ export interface ListStaffLeaveRequestsResponse {
   offset: number;
 }
 
-export let mockStaffLeaveRequests: StaffLeaveItem[] = [
-  {
-    leaveId: 'slr-demo-001',
-    staffActorId: 'staff-001',
-    staffRole: 'CARE_MANAGER',
-    staffName: 'Lê Văn Tùng',
-    staffCode: 'NV-001',
-    leaveType: 'ANNUAL',
-    startDate: '2026-09-25T08:00:00.000Z',
-    endDate: '2026-09-27T17:00:00.000Z',
-    reason: 'Nghỉ phép năm đưa gia đình đi du lịch',
-    isSpecialCase: false,
-    noticeHours: 190,
-    isAdvanceNotice48h: true,
-    status: 'APPROVED',
-    reviewedBy: 'staff-000',
-    reviewedByRole: 'SUPERVISOR',
-    reviewerName: 'Trần Thị Mai (Giám đốc)',
-    reviewedAt: '2026-09-17T09:00:00.000Z',
-    reviewNote: 'Đồng ý duyệt phép. Đã bàn giao ca cho đ/c Y sĩ.',
-    createdAt: '2026-09-15T08:00:00.000Z',
-    updatedAt: '2026-09-17T09:00:00.000Z',
-  },
-  {
-    leaveId: 'slr-demo-002',
-    staffActorId: 'staff-002',
-    staffRole: 'NURSE',
-    staffName: 'Nguyễn Thị Hoa',
-    staffCode: 'NV-002',
-    leaveType: 'SICK',
-    startDate: '2026-09-17T14:00:00.000Z',
-    endDate: '2026-09-18T17:00:00.000Z',
-    reason: 'Sốt cao đột xuất',
-    isSpecialCase: true,
-    specialReason: 'Sốt vi rút cấp tính 39 độ C, có giấy xác nhận phòng khám',
-    noticeHours: 3.5,
-    isAdvanceNotice48h: false,
-    status: 'PENDING',
-    createdAt: '2026-09-17T10:30:00.000Z',
-    updatedAt: '2026-09-17T10:30:00.000Z',
-  },
-];
+export // NO SEED DATA — Production-ready empty state
+let mockStaffLeaveRequests: StaffLeaveItem[] = [];
 
 export async function fetchStaffLeaveRequests(
   actorId: string,

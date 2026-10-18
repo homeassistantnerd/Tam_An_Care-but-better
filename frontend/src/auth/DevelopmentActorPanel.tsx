@@ -9,6 +9,7 @@ import {
   loginWithPassword,
   logoutCurrentSession,
 } from '../api/auth';
+import { changeSelfPassword } from '../api/staff-actors';
 import { ROLE_LABELS } from './role-policy';
 import { recordSystemAuditLog } from '../api/audit-log';
 
@@ -111,6 +112,15 @@ export function DevelopmentActorPanel() {
   const handleChangeAdminPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setChangePasswordFeedback(null);
+    if (import.meta.env.PROD) {
+      if (!actor) return;
+      try {
+        await changeSelfPassword(actor, currentAdminPasswordInput, newAdminPasswordInput);
+        clearActor();
+        setChangePasswordFeedback('Đã đổi mật khẩu. Vui lòng đăng nhập lại.');
+      } catch (error) { setChangePasswordFeedback(error instanceof Error ? error.message : 'Không thể đổi mật khẩu.'); }
+      return;
+    }
 
     const currentSaved = getStoredAdminPassword();
     if (currentAdminPasswordInput.trim() !== currentSaved) {
@@ -275,7 +285,7 @@ export function DevelopmentActorPanel() {
               </div>
 
               <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-                {isAdmin && (
+                {isAdmin && !import.meta.env.PROD && (
                   <button
                     type="button"
                     onClick={() => setShowChangeAdminPasswordModal(true)}
@@ -418,7 +428,7 @@ export function DevelopmentActorPanel() {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || !loginIdentifier.trim()}
+                  disabled={isSubmitting || !loginIdentifier.trim() || !loginPassword}
                   style={{
                     width: '100%',
                     height: '44px',
@@ -480,7 +490,7 @@ export function DevelopmentActorPanel() {
       )}
 
       {/* MODAL CHANGE ADMIN PASSWORD */}
-      {showChangeAdminPasswordModal && (
+      {showChangeAdminPasswordModal && !import.meta.env.PROD && (
         <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1rem' }}>
           <div className="modal-dialog" style={{ background: '#ffffff', borderRadius: '0.75rem', maxWidth: '420px', width: '100%', padding: '1.25rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.6rem', marginBottom: '1rem' }}>

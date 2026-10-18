@@ -1,3 +1,4 @@
+import { GuardianResidentPanel } from './GuardianResidentPanel';
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from '../../auth/ActorContext';
@@ -93,6 +94,11 @@ function formatPeriodDate(iso: string): string {
 }
 
 export default function FamilyPortalPage() {
+  const { actor } = useActor();
+  return actor?.actorRole === 'GUARDIAN' ? <GuardianResidentPanel actor={actor} /> : <StaffFamilyPortalPage />;
+}
+
+function StaffFamilyPortalPage() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 

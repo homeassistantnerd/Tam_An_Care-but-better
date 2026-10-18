@@ -427,6 +427,10 @@ export class StaffActorController {
       );
     }
 
+    if (requesterRole !== 'ADMIN' && ['ADMIN', 'SUPERVISOR'].includes(targetRole)) {
+      throw new ForbiddenException('Only Admin may create management accounts');
+    }
+
     const duplicate =
       await this.staffActors
         .findByStaffCode(staffCode);

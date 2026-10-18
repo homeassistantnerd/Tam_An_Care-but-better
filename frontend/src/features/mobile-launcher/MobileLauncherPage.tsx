@@ -4,6 +4,7 @@ import { useActor } from '../../auth/ActorContext';
 import { ROLE_LABELS, hasCapability, canAccessRoute } from '../../auth/role-policy';
 import type { HumanActorRole } from '../../types/actor';
 import { createStaffLeaveRequest, StaffLeaveType } from '../../api/resident-leave';
+import { PsychosocialQuickEntry } from './PsychosocialQuickEntry';
 
 interface AppIconItem {
   id: string;
@@ -141,7 +142,7 @@ export function MobileLauncherPage() {
       badge: 'MỚI',
       badgeBg: '#f59e0b',
       category: 'Tâm Lý & CTXH',
-      isAllowed: (role) => hasCapability(role, 'canEvaluatePsychology') || role === 'SUPERVISOR' || role === 'ADMIN' || role === 'CARE_MANAGER',
+      isAllowed: (role) => role === 'PSYCHOLOGIST' || role === 'SOCIAL_WORKER',
     },
     {
       id: 'counseling',
@@ -149,7 +150,7 @@ export function MobileLauncherPage() {
       icon: '🗣️',
       gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
       category: 'Tâm Lý & CTXH',
-      isAllowed: (role) => hasCapability(role, 'canEvaluatePsychology') || role === 'SUPERVISOR' || role === 'ADMIN' || role === 'CARE_MANAGER',
+      isAllowed: (role) => role === 'PSYCHOLOGIST' || role === 'SOCIAL_WORKER',
     },
 
     // --- 2. CƯ DÂN & GHI ÂM (DÙNG CHUNG) ---
@@ -456,143 +457,42 @@ export function MobileLauncherPage() {
 
             {/* FORM TYPE 1: PSYCHOLOGY & SOCIAL WORK (TÂM LÝ & CTXH) */}
             {(activeApp.id === 'psychology-eval' || activeApp.id === 'counseling') && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {[
-                  { id: 'psy-1', name: 'Bà Nguyễn Thị Mai', room: 'Phòng 201 • Giường A', note: 'Thích trò chuyện về gia đình, tâm lý ổn định' },
-                  { id: 'psy-2', name: 'Ông Trần Văn Bình', room: 'Phòng 203 • Giường B', note: 'Có biểu hiện lo âu ca đêm, cần động viên' },
-                  { id: 'psy-3', name: 'Ông Lê Hoàng Nam', room: 'Phòng 205 • Giường A', note: 'Tham gia tích cực CLB Đọc sách ca sáng' },
-                ].map((item) => {
-                  const isDone = completedTaskIds[item.id];
-                  return (
-                    <div
-                      key={item.id}
-                      style={{
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '18px',
-                        padding: '14px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '10px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{item.name}</div>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>{item.room}</div>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: '10px',
-                            fontWeight: 800,
-                            padding: '3px 8px',
-                            borderRadius: '999px',
-                            backgroundColor: isDone ? '#dcfce7' : '#fef3c7',
-                            color: isDone ? '#15803d' : '#b45309',
-                          }}
-                        >
-                          {isDone ? '✓ ĐÃ ĐÁNH GIÁ' : 'CHỜ TƯ VẤN'}
-                        </span>
-                      </div>
-
-                      <div style={{ fontSize: '12px', color: '#334155', backgroundColor: '#f8fafc', padding: '8px 12px', borderRadius: '12px' }}>
-                        <strong>Ghi chú tâm lý:</strong> {item.note}
-                      </div>
-
-                      {/* 1-Tap Emotion Criteria Selection */}
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          type="button"
-                          onClick={() => showToast(`✓ Đã ghi nhận ${item.name}: Tinh thần Tốt 😀`)}
-                          style={{ flex: 1, padding: '8px', borderRadius: '12px', border: '1px solid #10b981', backgroundColor: '#ecfdf5', fontSize: '11px', fontWeight: 700, color: '#047857', cursor: 'pointer' }}
-                        >
-                          😀 Vui Vẻ
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => showToast(`✓ Đã ghi nhận ${item.name}: Bình thường 😐`)}
-                          style={{ flex: 1, padding: '8px', borderRadius: '12px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontSize: '11px', fontWeight: 700, color: '#475569', cursor: 'pointer' }}
-                        >
-                          😐 Bình Thường
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => showToast(`⚠️ Đã báo cáo ${item.name}: Lo âu 🙁`)}
-                          style={{ flex: 1, padding: '8px', borderRadius: '12px', border: '1px solid #f43f5e', backgroundColor: '#fff1f2', fontSize: '11px', fontWeight: 700, color: '#be123c', cursor: 'pointer' }}
-                        >
-                          🙁 Lo Âm
-                        </button>
-                      </div>
-
-                      {/* Confirm Task Completion */}
-                      <button
-                        type="button"
-                        onClick={() => toggleTaskDone(item.id, item.name)}
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          borderRadius: '14px',
-                          border: 'none',
-                          backgroundColor: isDone ? '#047857' : '#10b981',
-                          color: '#ffffff',
-                          fontSize: '12px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {isDone ? '✓ ĐÃ XÁC NHẬN TƯ VẤN CA NÀY' : '1-CHẠM XÁC NHẬN HOÀN THÀNH'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+              <PsychosocialQuickEntry actor={actor} />
             )}
 
             {/* FORM TYPE 2: NURSE & MEDICATION (Y TẾ & ĐIỀU DƯỠNG) */}
             {(activeApp.id === 'meds' || activeApp.id === 'vitals') && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {[
-                  { id: 'med-1', name: 'Bà Nguyễn Thị Mai', room: 'Phòng 201', detail: 'Thuốc Huyết Áp (1 Viên) • Ca 08:00' },
-                  { id: 'med-2', name: 'Ông Trần Văn Bình', room: 'Phòng 203', detail: 'Thuốc Bổ Não (2 Viên) • Ca 08:00' },
-                ].map((m) => {
-                  const isDone = completedTaskIds[m.id];
-                  return (
-                    <div key={m.id} style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{m.name}</div>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>{m.room}</div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#2563eb', marginTop: '4px' }}>{m.detail}</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleTaskDone(m.id, m.name)}
-                        style={{ padding: '10px 16px', borderRadius: '12px', border: 'none', backgroundColor: isDone ? '#047857' : '#2563eb', color: '#ffffff', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
-                      >
-                        {isDone ? '✓ ĐÃ UỐNG' : '1-CHẠM'}
-                      </button>
-                    </div>
-                  );
-                })}
+              <div
+                style={{
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '18px',
+                  padding: '18px',
+                  color: '#475569',
+                  fontSize: '12px',
+                  lineHeight: 1.6,
+                }}
+              >
+                Chưa có dữ liệu nghiệp vụ thực để hiển thị tại thao tác nhanh này.
+                Không sử dụng dữ liệu người cao tuổi, thuốc hoặc y lệnh mô phỏng.
               </div>
             )}
 
             {/* FORM TYPE 3: CAREGIVER (CHĂM SÓC VIÊN) */}
             {(activeApp.id === 'hygiene' || activeApp.id === 'meals') && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {[
-                  { id: 'cg-1', name: 'Bà Nguyễn Thị Mai', room: 'Phòng 201' },
-                  { id: 'cg-2', name: 'Ông Trần Văn Bình', room: 'Phòng 203' },
-                ].map((cg) => (
-                  <div key={cg.id} style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '18px', padding: '14px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{cg.name} ({cg.room})</div>
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                      <button type="button" onClick={() => showToast(`✓ Ghi nhận ${cg.name}: Ăn hết 100%`)} style={{ flex: 1, padding: '8px', borderRadius: '12px', backgroundColor: '#ecfdf5', border: '1px solid #10b981', fontSize: '11px', fontWeight: 700, color: '#047857' }}>Ăn 100%</button>
-                      <button type="button" onClick={() => showToast(`✓ Ghi nhận ${cg.name}: Ăn được 50%`)} style={{ flex: 1, padding: '8px', borderRadius: '12px', backgroundColor: '#fffbeb', border: '1px solid #f59e0b', fontSize: '11px', fontWeight: 700, color: '#b45309' }}>Ăn 50%</button>
-                      <button type="button" onClick={() => showToast(`⚠️ Đã báo cáo ${cg.name}: Bỏ Bữa`)} style={{ flex: 1, padding: '8px', borderRadius: '12px', backgroundColor: '#fff1f2', border: '1px solid #f43f5e', fontSize: '11px', fontWeight: 700, color: '#be123c' }}>Bỏ Bữa</button>
-                    </div>
-                  </div>
-                ))}
+              <div
+                style={{
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '18px',
+                  padding: '18px',
+                  color: '#475569',
+                  fontSize: '12px',
+                  lineHeight: 1.6,
+                }}
+              >
+                Chưa có dữ liệu chăm sóc thực tế để hiển thị tại thao tác nhanh này.
+                Không sử dụng người cao tuổi hoặc hoạt động chăm sóc mô phỏng.
               </div>
             )}
 

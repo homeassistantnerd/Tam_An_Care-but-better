@@ -94,19 +94,6 @@ export interface ClinicalAssessmentData {
     sleepQualities?: Sleep[];
   };
 
-  // V-B. Đánh giá Tâm lý & Công tác xã hội
-  psychologicalAssessment?: {
-    isCompleted: boolean;
-    assessorName: string;
-    assessmentDate: string;
-    emotionalState: 'HAPPY_SOCIABLE' | 'STABLE_NORMAL' | 'ANXIOUS_DEPRESSED' | 'IRRITABLE_AGITATED';
-    socialInteraction: 'ACTIVE_COMMUNICATIVE' | 'PASSIVE_QUIET' | 'WITHDRAWN_REFUSED';
-    cognitiveMemoryScore: string;
-    behavioralNotes: string;
-    recommendations: string;
-    isManualSupplemented?: boolean;
-  };
-
   // VI. Dinh dưỡng & Nhai nuốt
   nutrition: {
     dietType: 'NORMAL_RICE' | 'PORRIDGE_SOUP' | 'SONDE';
@@ -135,86 +122,68 @@ export interface ClinicalAssessmentData {
 }
 
 const DEFAULT_ASSESSMENT: ClinicalAssessmentData = {
-  assessmentDate: new Date().toISOString().slice(0, 10),
+  assessmentDate: '',
   assessorName: '',
   residentName: '',
   residentCode: '',
   dateOfBirth: '',
-  gender: 'Nữ',
+  gender: '',
   room: '',
 
-  pulse: '70 – 85',
-  pulseEvaluation: 'NORMAL',
-  bloodPressure: '118/75 – 134/88',
-  bpEvaluation: 'HIGH',
-  temperature: '36.2 – 36.8',
-  tempEvaluation: 'NORMAL',
-  spo2: '95 – 99',
-  spo2Evaluation: 'NORMAL',
-  weightRecords: [
-    { id: '1', date: '07/07/2026', value: '47 kg' },
-    { id: '2', date: '16/07/2026', value: '48.3 kg' },
-    { id: '3', date: '12/08/2026', value: '49.5 kg' },
-  ],
-  glucoseRecords: [
-    { id: '1', date: '07/07/2026', value: '6.2 mmol/L' },
-    { id: '2', date: '16/07/2026', value: '7.2 mmol/L' },
-    { id: '3', date: '12/08/2026', value: '8.5 mmol/L' },
-  ],
+  pulse: '',
+  pulseEvaluation: '' as ClinicalAssessmentData['pulseEvaluation'],
+  bloodPressure: '',
+  bpEvaluation: '' as ClinicalAssessmentData['bpEvaluation'],
+  temperature: '',
+  tempEvaluation: '' as ClinicalAssessmentData['tempEvaluation'],
+  spo2: '',
+  spo2Evaluation: '' as ClinicalAssessmentData['spo2Evaluation'],
+  weightRecords: [],
+  glucoseRecords: [],
 
   conditions: {
     hypertension: false,
-    diabetes: true,
-    diabetesType: 'Tuýp 2',
+    diabetes: false,
+    diabetesType: '',
     cardiovascular: false,
     strokeOrHemiplegia: false,
-    dementiaAlzheimer: true,
+    dementiaAlzheimer: false,
     osteoarthritis: false,
     respiratory: false,
     kidneyDisease: false,
     other: false,
     otherDetail: '',
   },
+
   allergy: {
-    none: true,
+    none: false,
     drugAllergy: '',
     foodAllergy: '',
   },
-  medicationsNotes: 'Bà đang dùng thuốc điều trị tiểu đường theo đơn của BS chỉ định.\nCấp phát thuốc đúng cữ 7h00 - 11h30 - 17h00 theo quy chuẩn 5 Đúng eMAR.',
+
+  medicationsNotes: '',
 
   adl: {
-    eating: 'INDEPENDENT',
-    bathing: 'FULL_DEPEND',
-    dressing: 'INDEPENDENT',
-    toileting: 'PARTIAL_ASSIST',
-    mobility: 'INDEPENDENT',
-    excretion: 'AUTONOMOUS',
-    mobilitySupport: 'NONE',
+    eating: '' as ClinicalAssessmentData['adl']['eating'],
+    bathing: '' as ClinicalAssessmentData['adl']['bathing'],
+    dressing: '' as ClinicalAssessmentData['adl']['dressing'],
+    toileting: '' as ClinicalAssessmentData['adl']['toileting'],
+    mobility: '' as ClinicalAssessmentData['adl']['mobility'],
+    excretion: '' as ClinicalAssessmentData['adl']['excretion'],
+    mobilitySupport: '' as ClinicalAssessmentData['adl']['mobilitySupport'],
   },
 
   mental: {
-    alertAndResponsive: true,
-    memoryCognition: 'CONFUSED_SEVERE',
-    emotionalState: 'HAPPY_SOCIABLE',
-    sleepQuality: 'GOOD',
-  },
-
-  psychologicalAssessment: {
-    isCompleted: true,
-    assessorName: 'CN. Nguyễn Hoàng Nam (Chuyên viên Tâm lý & CTXH)',
-    assessmentDate: new Date().toISOString().slice(0, 10),
-    emotionalState: 'HAPPY_SOCIABLE',
-    socialInteraction: 'ACTIVE_COMMUNICATIVE',
-    cognitiveMemoryScore: 'MMSE: 22/30 (Suy giảm nhận thức nhẹ)',
-    behavioralNotes: 'Cụ vui vẻ, tinh thần thoải mái, tích cực tham gia hoạt động trò chuyện nhóm ca sáng. Tâm lý ổn định, gắn kết tốt với nhân viên.',
-    recommendations: 'Khuyến khích cụ tiếp tục tham gia CLB Đọc sách và sinh hoạt tập thể để tăng khả năng giao tiếp.',
-    isManualSupplemented: false,
+    alertAndResponsive: false,
+    memoryCognition: '' as ClinicalAssessmentData['mental']['memoryCognition'],
+    emotionalState: '' as ClinicalAssessmentData['mental']['emotionalState'],
+    sleepQuality: '' as ClinicalAssessmentData['mental']['sleepQuality'],
   },
 
   nutrition: {
-    dietType: 'NORMAL_RICE',
-    swallowingAbility: 'NORMAL',
-    dentalStatus: 'NATURAL_GOOD',
+    dietType: '' as ClinicalAssessmentData['nutrition']['dietType'],
+    swallowingAbility: '' as ClinicalAssessmentData['nutrition']['swallowingAbility'],
+    dentalStatus: '' as ClinicalAssessmentData['nutrition']['dentalStatus'],
   },
 
   skinRisk: {
@@ -223,11 +192,9 @@ const DEFAULT_ASSESSMENT: ClinicalAssessmentData = {
     ulcerStageSize: '',
   },
 
-  careLevelProposal: 'LEVEL_2',
-  specificEvaluation:
-    'Huyết áp (Khoảng Min - Max trong kỳ): 118/75 – 134/88 mmHg.\nNhịp tim/Mạch (Khoảng Min - Max): 70 – 85 lần/phút (Ổn định bình thường).\nThân nhiệt (Khoảng Min - Max): 36.2 – 36.8°C | SpO2 (Khoảng Min - Max): 95 – 99%.\nĐường huyết mao mạch (Khoảng Min - Max): 6.2 – 8.5 mmol/L.\nSa sút trí tuệ: Bà nhận diện được người thân, nhưng hay nhầm lẫn đồ đạc của cụ cùng phòng. Cần nhân viên bao quát khi tập thể dục ngoài trời.',
-  additionalNotesAndCareInstructions:
-    '- Duy trì chế độ chăm sóc, dinh dưỡng giảm tinh bột tăng đạm và cấp phát thuốc hàng ngày theo đơn.\n- Nhân viên chăm sóc thay quần áo hàng ngày và hỗ trợ tắm rửa theo lịch.\n- Đại tiện cần nhân viên hỗ trợ lau rửa để đảm bảo vệ sinh do bà hay quên cách làm sạch.',
+  careLevelProposal: '' as ClinicalAssessmentData['careLevelProposal'],
+  specificEvaluation: '',
+  additionalNotesAndCareInstructions: '',
 };
 
 const STATUS_BADGES: Record<HealthReportStatus, { label: string; className: string }> = {
@@ -268,7 +235,7 @@ export default function HealthReportsPage() {
   const [dailyDiaBP, setDailyDiaBP] = useState<string>('80');
   const [dailyHeartRate, setDailyHeartRate] = useState<string>('75');
   const [dailyTemp, setDailyTemp] = useState<string>('36.5');
-  const [dailySpo2, setDailySpo2] = useState<string>('98');
+  const [dailySpo2, setDailySpo2] = useState<string>('');
   const [dailyRespRate, setDailyRespRate] = useState<string>('18');
   const [dailyWeight, setDailyWeight] = useState<string>('48.5');
   const [dailyBloodGlucose, setDailyBloodGlucose] = useState<string>('6.5');
@@ -355,7 +322,7 @@ export default function HealthReportsPage() {
         measuredAt: dailyMeasuredAt ? `${dailyMeasuredAt}:00.000Z` : new Date().toISOString(),
         recordedBy: dailyRecordedBy || actor?.displayName || 'Nhân viên y tế',
         recordedByRole: actor?.actorRole || 'NURSE',
-        note: dailyNote.trim() || 'Sinh hiệu trong ca trực ổn định.',
+        note: dailyNote.trim(),
       });
 
       // Refresh local daily history log for audit trail
@@ -546,7 +513,7 @@ export default function HealthReportsPage() {
       const currentAssessment = { ...assessment };
       if (actionType === 'APPROVE') {
         currentAssessment.medicalHeadApproval = {
-          approvedBy: actor.displayName || 'BS. Lê Hoàng Nam',
+          approvedBy: actor.displayName || actor.actorId || 'Phụ trách Y tế',
           approvedRole: 'Phụ trách Y tế',
           approvedAt: new Date().toLocaleString('vi-VN'),
         };
@@ -598,9 +565,11 @@ export default function HealthReportsPage() {
       setAssessment(DEFAULT_ASSESSMENT);
     } catch (err: any) {
       console.error('Lỗi khi lưu/phê duyệt báo cáo:', err);
-      setIsEditorOpen(false);
-      await refreshReports();
-      setMessage('✅ Đã lưu thành công Báo Cáo Sức Khỏe Định Kỳ!');
+      setMessage(
+        `❌ Không lưu được Báo Cáo Sức Khỏe Định Kỳ: ${
+          err?.message || 'Lỗi hệ thống'
+        }`,
+      );
     } finally {
       setBusy(false);
     }
@@ -740,7 +709,7 @@ export default function HealthReportsPage() {
                     type="number"
                     value={dailySysBP}
                     onChange={(e) => setDailySysBP(e.target.value)}
-                    placeholder="120"
+                    placeholder="Nhập HA tâm thu"
                     className="form-input"
                   />
                 </div>
@@ -751,7 +720,7 @@ export default function HealthReportsPage() {
                     type="number"
                     value={dailyDiaBP}
                     onChange={(e) => setDailyDiaBP(e.target.value)}
-                    placeholder="80"
+                    placeholder="Nhập HA tâm trương"
                     className="form-input"
                   />
                 </div>
@@ -762,7 +731,7 @@ export default function HealthReportsPage() {
                     type="number"
                     value={dailyHeartRate}
                     onChange={(e) => setDailyHeartRate(e.target.value)}
-                    placeholder="75"
+                    placeholder="Nhập mạch"
                     className="form-input"
                   />
                 </div>
@@ -774,7 +743,7 @@ export default function HealthReportsPage() {
                     step="0.1"
                     value={dailyTemp}
                     onChange={(e) => setDailyTemp(e.target.value)}
-                    placeholder="36.5"
+                    placeholder="Nhập thân nhiệt"
                     className="form-input"
                   />
                 </div>
@@ -785,7 +754,7 @@ export default function HealthReportsPage() {
                     type="number"
                     value={dailySpo2}
                     onChange={(e) => setDailySpo2(e.target.value)}
-                    placeholder="98"
+                    placeholder="Nhập SpO2"
                     className="form-input"
                   />
                 </div>
@@ -796,7 +765,7 @@ export default function HealthReportsPage() {
                     type="number"
                     value={dailyRespRate}
                     onChange={(e) => setDailyRespRate(e.target.value)}
-                    placeholder="18"
+                    placeholder="Nhập nhịp thở"
                     className="form-input"
                   />
                 </div>
@@ -808,7 +777,7 @@ export default function HealthReportsPage() {
                     step="0.1"
                     value={dailyWeight}
                     onChange={(e) => setDailyWeight(e.target.value)}
-                    placeholder="48.5"
+                    placeholder="Nhập cân nặng"
                     className="form-input"
                   />
                 </div>
@@ -820,7 +789,7 @@ export default function HealthReportsPage() {
                     step="0.1"
                     value={dailyBloodGlucose}
                     onChange={(e) => setDailyBloodGlucose(e.target.value)}
-                    placeholder="6.5"
+                    placeholder="Nhập đường huyết"
                     className="form-input"
                   />
                 </div>
@@ -833,7 +802,7 @@ export default function HealthReportsPage() {
                   rows={2}
                   value={dailyNote}
                   onChange={(e) => setDailyNote(e.target.value)}
-                  placeholder="Ví dụ: Cụ ăn ngon miệng, huyết áp ổn định sau cữ sáng, tinh thần vui vẻ..."
+                  placeholder="Ghi chú quan sát thực tế trong ca nếu có..."
                   className="form-textarea"
                 />
               </div>
@@ -1219,7 +1188,7 @@ export default function HealthReportsPage() {
                         onChange={(e) => setAssessment((prev) => ({ ...prev, assessorName: e.target.value }))}
                         required
                         className="form-input"
-                        placeholder="Ví dụ: ĐD. Lê Thị Mai"
+                        placeholder="Tên nhân viên y tế lập báo cáo"
                       />
                     </div>
                   </div>
@@ -1269,7 +1238,7 @@ export default function HealthReportsPage() {
                         type="text"
                         value={assessment.pulse}
                         onChange={(e) => handlePulseChange(e.target.value)}
-                        placeholder="70 – 85"
+                        placeholder="Nhập khoảng mạch Min – Max"
                         className="form-input"
                       />
                       <div style={{ marginTop: '0.35rem', fontSize: '0.78rem' }}>
@@ -1285,7 +1254,7 @@ export default function HealthReportsPage() {
                         type="text"
                         value={assessment.bloodPressure}
                         onChange={(e) => handleBpChange(e.target.value)}
-                        placeholder="118/75 – 134/88"
+                        placeholder="Nhập khoảng huyết áp Min – Max"
                         className="form-input"
                       />
                       <div style={{ marginTop: '0.35rem', fontSize: '0.78rem' }}>
@@ -1301,7 +1270,7 @@ export default function HealthReportsPage() {
                         type="text"
                         value={assessment.temperature}
                         onChange={(e) => handleTempChange(e.target.value)}
-                        placeholder="36.2 – 36.8"
+                        placeholder="Nhập khoảng nhiệt độ Min – Max"
                         className="form-input"
                       />
                       <div style={{ marginTop: '0.35rem', fontSize: '0.78rem' }}>
@@ -1317,7 +1286,7 @@ export default function HealthReportsPage() {
                         type="text"
                         value={assessment.spo2}
                         onChange={(e) => handleSpo2Change(e.target.value)}
-                        placeholder="95 – 99"
+                        placeholder="Nhập khoảng SpO2 Min – Max"
                         className="form-input"
                       />
                       <div style={{ marginTop: '0.35rem', fontSize: '0.78rem' }}>
@@ -1694,13 +1663,13 @@ export default function HealthReportsPage() {
                     <div className="medical-head-digital-stamp" style={{ border: '2px dashed #16a34a', background: '#f0fdf4', borderRadius: '0.375rem', padding: '0.35rem 0.65rem', marginBottom: '0.4rem', textAlign: 'center', minWidth: '180px' }}>
                       <div style={{ fontWeight: 800, color: '#15803d', fontSize: '0.72rem', letterSpacing: '0.02em' }}>✓ ĐÃ PHÊ DUYỆT & KÝ SỐ</div>
                       <div style={{ fontWeight: 700, color: '#166534', fontSize: '0.8rem', marginTop: '0.15rem' }}>
-                        {viewingReport.data.medicalHeadApproval?.approvedBy || 'BS. Lê Hoàng Nam'}
+                        {viewingReport.data.medicalHeadApproval?.approvedBy || '—'}
                       </div>
                       <div style={{ fontSize: '0.68rem', color: '#15803d', fontStyle: 'italic' }}>
                         {viewingReport.data.medicalHeadApproval?.approvedRole || 'Phụ trách Y tế'}
                       </div>
                       <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.1rem' }}>
-                        {viewingReport.data.medicalHeadApproval?.approvedAt || 'Đã xác nhận chuyên môn'}
+                        {viewingReport.data.medicalHeadApproval?.approvedAt || '—'}
                       </div>
                     </div>
                   ) : (
@@ -1713,7 +1682,7 @@ export default function HealthReportsPage() {
                   <div className="medical-head-signature-blank-space" style={{ height: '3.5rem', width: '100%', display: 'none' }}></div>
 
                   <div style={{ fontWeight: 700, borderTop: '1px dashed #cbd5e1', paddingTop: '0.25rem', fontSize: '0.8rem', width: '100%', maxWidth: '220px' }}>
-                    {viewingReport.data.medicalHeadApproval?.approvedBy || 'BS. Lê Hoàng Nam'}
+                    {viewingReport.data.medicalHeadApproval?.approvedBy || '—'}
                     <div style={{ fontSize: '0.7rem', color: '#475569', fontWeight: 400 }}>Phụ trách Y tế Tâm An Care</div>
                   </div>
                 </div>

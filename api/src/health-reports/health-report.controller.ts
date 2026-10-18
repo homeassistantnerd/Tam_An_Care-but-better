@@ -5,6 +5,7 @@ import {
   Headers,
   Param,
   Post,
+  Put,
   Query,
   StreamableFile,
   UnauthorizedException,
@@ -16,7 +17,7 @@ import {
   HealthReportService,
 } from './health-report.service';
 
-@Controller('api/health-reports')
+@Controller(['health-reports', 'api/health-reports'])
 export class HealthReportController {
   constructor(
     private readonly service:
@@ -39,6 +40,7 @@ export class HealthReportController {
 
     const roles:
       HealthReportActorRole[] = [
+        'ADMIN',
         'CAREGIVER',
         'NURSE',
         'CARE_MANAGER',
@@ -136,6 +138,16 @@ export class HealthReportController {
       ),
       body,
     );
+  }
+
+  @Put(':healthReportId')
+  update(
+    @Headers('x-actor-id') actorId: string | undefined,
+    @Headers('x-actor-role') actorRole: string | undefined,
+    @Param('healthReportId') healthReportId: string,
+    @Body() body: { summary: string },
+  ): Promise<HealthReportRow> {
+    return this.service.update(this.actor(actorId, actorRole), healthReportId, body);
   }
 
   @Post(':healthReportId/generate')

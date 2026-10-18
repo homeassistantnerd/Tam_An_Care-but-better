@@ -259,108 +259,73 @@ test('STAFF10', async () => runCase('STAFF10', async () => {
 // GUARD01–GUARD12 — Guardian resident-scope cases
 // ===========================================================================
 
+const { GuardianResidentService } = require('../dist/resident-access-scope/guardian-resident.service.js');
+
+function guardianHarness({ active = true, linked = true, expired = false, revoked = false } = {}) {
+  let queries = 0;
+  const db = { query: async (sql, params) => {
+    queries++;
+    assert.match(sql, /sa.status = 'ACTIVE'/);
+    assert.match(sql, /sa.primary_operational_role/);
+    assert.match(sql, /raa.status = 'ACTIVE'/);
+    assert.match(sql, /raa.effective_from <= NOW\(\)/);
+    assert.match(sql, /raa.effective_to > NOW\(\)/);
+    assert.match(sql, /r.active_status = true/);
+    assert.deepEqual(params.slice(0, 3), ['guardian-A', 'GUARDIAN', 'FAMILY_PORTAL']);
+    const permitted = active && linked && !expired && !revoked && (!params[3] || params[3] === 'resident-A');
+    return { rows: permitted ? [{ residentId: 'resident-A', residentCode: 'CI-A', displayName: 'CI resident' }] : [] };
+  }};
+  const scope = new ResidentAccessScopeService(db, {});
+  return { service: new GuardianResidentService(db, scope), queries: () => queries };
+}
+
 test('GUARD01', async () => runCase('GUARD01', async () => {
-  // Guardian actively linked to resident A reads permitted info on A → ALLOW
-  // Modelled via scope service: active supervisor (represents active link) + resident exists
-  const scope = makeScope({ staffActive: true, rowCount: 1 });
-  const allowed = await scope.canAccessResident('ci-staff-001', 'SUPERVISOR', 'resident-A');
-  assert.equal(allowed, true, 'GUARD01: active linked accessor must be allowed for assigned resident');
+  const h = guardianHarness();
+  assert.equal((await h.service.detail('guardian-A', 'GUARDIAN', 'resident-A')).residentId, 'resident-A');
 }));
-
 test('GUARD02', async () => runCase('GUARD02', async () => {
-  // Guardian linked only to A requests resident B → DENY; no B data disclosed
-  const scope = makeScope({ staffActive: true, rowCount: 0 }); // B not in result
-  const allowed = await scope.canAccessResident('ci-staff-001', 'CAREGIVER', 'resident-B');
-  assert.equal(allowed, false, 'GUARD02: access to non-assigned resident must be denied');
+  await assert.rejects(guardianHarness().service.detail('guardian-A', 'GUARDIAN', 'resident-B'), e => e.getStatus() === 404);
 }));
-
 test('GUARD03', async () => runCase('GUARD03', async () => {
-  // Guardian without resident link → DENY
-  const scope = makeScope({ staffActive: false }); // staff actor not found → no link
-  const allowed = await scope.canAccessResident('ci-unlinked-guardian', 'CAREGIVER', 'resident-A');
-  assert.equal(allowed, false, 'GUARD03: unlinked accessor must be denied');
+  assert.deepEqual(await guardianHarness({ linked: false }).service.list('guardian-A', 'GUARDIAN'), []);
 }));
-
 test('GUARD04', async () => runCase('GUARD04', async () => {
-  // Guardian with revoked resident link → DENY
-  // Revoked link = assignment row not returned (status != ACTIVE)
-  const scope = makeScope({ staffActive: true, rowCount: 0 });
-  const allowed = await scope.canAccessResident('ci-staff-001', 'CAREGIVER', 'resident-A');
-  assert.equal(allowed, false, 'GUARD04: revoked link must deny access');
+  await assert.rejects(guardianHarness({ revoked: true }).service.detail('guardian-A', 'GUARDIAN', 'resident-A'), e => e.getStatus() === 404);
 }));
-
 test('GUARD05', async () => runCase('GUARD05', async () => {
-  // Guardian with expired resident link → DENY (same DB mechanism: no active row)
-  const scope = makeScope({ staffActive: true, rowCount: 0 });
-  const allowed = await scope.canAccessResident('ci-staff-001', 'NURSE', 'resident-A');
-  assert.equal(allowed, false, 'GUARD05: expired link must deny access');
+  await assert.rejects(guardianHarness({ expired: true }).service.detail('guardian-A', 'GUARDIAN', 'resident-A'), e => e.getStatus() === 404);
 }));
-
 test('GUARD06', async () => runCase('GUARD06', async () => {
-  // Guardian identity deactivated → DENY
-  const scope = makeScope({ staffActive: false });
-  const allowed = await scope.canAccessResident('ci-deactivated-001', 'CAREGIVER', 'resident-A');
-  assert.equal(allowed, false, 'GUARD06: deactivated identity must be denied');
+  assert.deepEqual(await guardianHarness({ active: false }).service.list('guardian-A', 'GUARDIAN'), []);
 }));
-
 test('GUARD07', async () => runCase('GUARD07', async () => {
-  // Guardian identity used as staff identity → DENY
-  // Guardian role is not in VALID_ROLES for staff middleware
-  const mw = makeMiddleware();
-  const tok = makeToken(staffClaims({ sub: 'ci-guardian-007', role: 'GUARDIAN' }));
-  const r = await invokeMiddleware(mw, { authorization: `Bearer ${tok}` });
-  assert.ok(r.error, 'GUARD07: guardian role must be rejected by staff-only middleware');
+  const r = await invokeMiddleware(makeMiddleware(), { authorization: 'Bearer ' + makeToken(staffClaims({ role: 'GUARDIAN' })) });
+  assert.equal(r.error.getStatus(), 403);
   assert.equal(r.nextCount, 0);
 }));
-
 test('GUARD08', async () => runCase('GUARD08', async () => {
-  // Guardian attempts unauthorized update to resident → DENY; no mutation
-  // Controller: unauthorized scope check prevents getResident without reads
-  const ctrl = makeController({ scopeAllowed: false });
-  let reads = 0;
-  const origGetById = ctrl['residentService'] && ctrl['residentService'].getById;
-  // Intercept: verify getById is never reached
-  await assert.rejects(
-    () => ctrl.getResident('ci-staff-001', 'CAREGIVER', 'resident-B'),
-    'GUARD08: unauthorized resident access must be denied',
-  );
-}));
-
-test('GUARD09', async () => runCase('GUARD09', async () => {
-  // Guardian changes resident ID in request path → DENY unauthorized resident
-  // Scope returns false for a different resident ID
-  const ctrl = makeController({ scopeAllowed: false });
-  await assert.rejects(
-    () => ctrl.getResident('ci-staff-001', 'CAREGIVER', 'resident-injected-X'),
-    'GUARD09: tampered resident ID must be denied',
-  );
-}));
-
-test('GUARD10', async () => runCase('GUARD10', async () => {
-  // Guardian requests listing beyond assigned residents → DENY
-  const ctrl = makeController({ supervisorValid: false });
-  await assert.rejects(
-    () => ctrl.listResidents('ci-guardian-010', 'CAREGIVER'),
-    'GUARD10: unauthorized listing must be denied',
-  );
-}));
-
-test('GUARD11', async () => runCase('GUARD11', async () => {
-  // Guardian requests access after link revocation → DENY
-  // Revoked session: DB returns empty rows
-  const mw = makeMiddleware({ rows: [] });
-  const tok = makeToken(staffClaims({ sub: 'ci-staff-011', jti: 'ci-session-revoked-011' }));
-  const r = await invokeMiddleware(mw, { authorization: `Bearer ${tok}` });
-  assert.ok(r.error, 'GUARD11: revoked session must be denied after revocation');
-  assert.equal(r.nextCount, 0);
-}));
-
-test('GUARD12', async () => runCase('GUARD12', async () => {
-  // Unauthenticated caller requests protected resident data → DENY
   const mw = makeMiddleware();
-  const r = await invokeMiddleware(mw, { authorization: undefined });
-  assert.ok(r.error, 'GUARD12: unauthenticated request must be denied');
-  assert.equal(r.nextCount, 0);
+  const req = { method: 'POST', originalUrl: '/api/family-portal/residents/resident-A', headers: {},
+    header: () => 'Bearer ' + makeToken(staffClaims({ role: 'GUARDIAN' })) };
+  await assert.rejects(mw.use(req, undefined, () => assert.fail('must deny mutation')), e => e.getStatus() === 403);
+}));
+test('GUARD09', async () => runCase('GUARD09', async () => {
+  await assert.rejects(guardianHarness().service.detail('guardian-A', 'GUARDIAN', "resident-A' OR TRUE --"), e => e.getStatus() === 404);
+}));
+test('GUARD10', async () => runCase('GUARD10', async () => {
+  const result = await guardianHarness().service.list('guardian-A', 'GUARDIAN');
+  assert.deepEqual(result.map(r => r.residentId), ['resident-A']);
+}));
+test('GUARD11', async () => runCase('GUARD11', async () => {
+  const state = { revoked: false };
+  assert.equal((await guardianHarness(state).service.list('guardian-A', 'GUARDIAN')).length, 1);
+  state.revoked = true;
+  assert.deepEqual(await guardianHarness(state).service.list('guardian-A', 'GUARDIAN'), []);
+}));
+test('GUARD12', async () => runCase('GUARD12', async () => {
+  const h = guardianHarness();
+  await assert.rejects(h.service.list(undefined, undefined), e => e.getStatus() === 403);
+  assert.equal(h.queries(), 0);
 }));
 
 // ===========================================================================
@@ -375,6 +340,8 @@ process.on('exit', () => {
     JSON.stringify(
       {
         schema: 'guardian-22-case-evidence-v1',
+        coverage: { guardianResidentAuthorization: true, databaseIntegration: false },
+        limitation: 'Real Guardian services with injected memory database; PostgreSQL integration is a separate release gate.',
         head_sha: process.env.GITHUB_SHA || '',
         run_at: new Date().toISOString(),
         environment: 'isolated-in-memory-no-db',

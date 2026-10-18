@@ -6,7 +6,11 @@
     "build": "nest build",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
-    "test": "node --experimental-strip-types --test test/**/*.test.mts"
+    "pretest": "nest build",
+    "test": "node --experimental-strip-types --test \"test/**/*.test.mts\" \"test/*.test.cjs\"",
+    "test:integration": "node --test \"test/*.integration.cjs\"",
+    "verify:rbac": "npm run build && node scripts/verify-build-output.cjs && npm test",
+    "verify:schema": "node scripts/rbac-schema-preflight.cjs"
   },
   "dependencies": {
     "@nestjs/common": "12.0.1",

@@ -1,3 +1,4 @@
+import { readStoredAccessToken, clearStoredAuthSession } from '../../auth/session';
 import type {
   HumanActorSession,
 } from '../../types/actor';
@@ -59,10 +60,10 @@ async function getHealthReport(
   actor: HumanActorSession,
   id: string,
 ): Promise<HealthReportRow> {
-  return apiRequest<HealthReportRow>(
-    `/api/health-reports/${encodeURIComponent(id)}`,
-    { actor },
+  const detail = await apiRequest<{ report: HealthReportRow }>(
+    `/api/health-reports/${encodeURIComponent(id)}`, { actor },
   );
+  return detail.report;
 }
 
 export async function listHealthReports(
@@ -86,9 +87,20 @@ export async function listHealthReports(
       { actor },
     );
 
-  return Array.isArray(result)
-    ? result
-    : result.reports ?? [];
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  if (
+    result &&
+    typeof result === 'object' &&
+    'reports' in result &&
+    Array.isArray(result.reports)
+  ) {
+    return result.reports;
+  }
+
+  return [];
 }
 
 export async function createHealthReport(
@@ -307,11 +319,15 @@ export async function downloadHealthReportPdf(
     actor.actorRole,
   );
 
+  const token = readStoredAccessToken();
+  if (!token) throw new Error('Phiên đăng nhập đã hết hạn.');
+  headers.set('Authorization', `Bearer ${token}`);
   const response = await fetch(
     `${API_BASE_URL}/api/health-reports/${encodeURIComponent(id)}/pdf`,
     { headers },
   );
 
+  if (response.status === 401) clearStoredAuthSession();
   if (!response.ok) {
     throw new Error(
       `Không thể tạo PDF (HTTP ${response.status}).`,

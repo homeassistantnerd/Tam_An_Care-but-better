@@ -133,8 +133,10 @@ export function sortResidentsAlphabetically(
 export async function listResidents(
   actor?: HumanActorSession | null,
 ): Promise<ResidentContextResponse[]> {
+  // Direct-care and psychosocial roles only see residents they are assigned to.
   const residents = await apiRequest<ResidentContextResponse[]>(
-    '/api/residents',
+    actor && ['NURSE', 'CAREGIVER', 'PSYCHOLOGIST', 'SOCIAL_WORKER'].includes(actor.actorRole)
+      ? '/api/operations/residents/assigned' : '/api/residents',
     {
       actor,
     },
@@ -178,4 +180,11 @@ export async function getResidentCareView(
       actor,
     },
   );
+}
+
+export function recordResidentVitals(residentId: string, actor: HumanActorSession,
+  measurements: Record<string, number>, note: string) {
+  return apiRequest<{ recorded: string[] }>(`/api/residents/${encodeURIComponent(residentId)}/vital-signs`, {
+    actor, method: 'POST', body: JSON.stringify({ measurements, note, measuredAt: new Date().toISOString() }),
+  });
 }

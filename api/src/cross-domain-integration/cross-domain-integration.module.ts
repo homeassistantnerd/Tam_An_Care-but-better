@@ -1,3 +1,4 @@
+import { ResidentAccessScopeModule } from '../resident-access-scope/resident-access-scope.module';
 import { Module } from '@nestjs/common';
 
 import { DatabaseModule } from '../database/database.module';
@@ -5,7 +6,7 @@ import { CrossDomainIntegrationController } from './cross-domain-integration.con
 import { CrossDomainIntegrationService } from './cross-domain-integration.service';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, ResidentAccessScopeModule],
   controllers: [CrossDomainIntegrationController],
   providers: [CrossDomainIntegrationService],
   exports: [CrossDomainIntegrationService],

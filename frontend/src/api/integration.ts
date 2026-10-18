@@ -143,7 +143,7 @@ export async function fetchResidentIntegrationOverview(
       resident: {
         resident_id: residentId,
         resident_code: 'RES-2026-001',
-        display_name: 'Nguyễn Văn An',
+        display_name: '',
         date_of_birth: '1944-05-15',
         gender: 'Nam',
         room: 'Phòng 101 — Giường 101-2',
