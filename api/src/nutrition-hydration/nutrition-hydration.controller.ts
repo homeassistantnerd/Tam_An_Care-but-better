@@ -3,9 +3,11 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   InternalServerErrorException,
   Param,
   Post,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import {
@@ -65,7 +67,11 @@ export class NutritionHydrationController {
   async execute(
     @Param('residentId') residentId: string,
     @Body() body: NutritionCommand,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    body = { ...body, actorId, actorRole } as NutritionCommand;
     try {
       const data =
         await this.service.execute(

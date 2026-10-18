@@ -3,10 +3,12 @@ import {
   Body,
   Controller,
   HttpException,
+  Headers,
   HttpStatus,
   NotFoundException,
   Param,
   Post,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import {
@@ -48,7 +50,11 @@ export class CarePlanGovernanceController {
 
     @Body()
     body: GovernanceBody,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    body = { ...body, actorId, actorRole };
 
     const action =
       String(

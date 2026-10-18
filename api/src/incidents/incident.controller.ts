@@ -2,8 +2,10 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Headers,
   Param,
   Post,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import {
@@ -29,7 +31,11 @@ export class IncidentController {
   async report(
     @Body()
     input: ReportIncidentInput,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ): Promise<any> {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    input = { ...input, actorId, actorRole };
 
     try {
 
@@ -61,7 +67,11 @@ export class IncidentController {
 
     @Body()
     input: IncidentMutationInput,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ): Promise<any> {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    input = { ...input, actorId, actorRole };
 
     try {
 

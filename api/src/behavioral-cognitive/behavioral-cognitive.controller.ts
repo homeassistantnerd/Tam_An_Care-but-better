@@ -5,6 +5,7 @@ import {
   Headers,
   Param,
   Post,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { BehavioralCognitiveService } from './behavioral-cognitive.service';
 
@@ -91,7 +92,11 @@ export class BehavioralCognitiveController {
   execute(
     @Param('residentId') residentId: string,
     @Body() body: any,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    body = { ...body, actorId, actorRole };
     return this.service.execute(residentId, body);
   }
 }

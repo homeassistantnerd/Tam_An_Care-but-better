@@ -3,9 +3,11 @@ import {
   Controller,
   Get,
   HttpException,
+  Headers,
   HttpStatus,
   Param,
   Post,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import { WarningReviewService } from './warning-review.service';
@@ -22,7 +24,11 @@ export class WarningReviewController {
   @Post()
   async review(
     @Body() body: any,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    body = { ...body, reviewerId: actorId, reviewerRole: actorRole };
 
     try {
 
