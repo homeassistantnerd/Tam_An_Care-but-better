@@ -20,6 +20,7 @@ import { AiGovernanceController } from './ai/ai-governance.controller';
 import { EarlyWarningController } from './ai/early-warning.controller';
 import { EarlyWarningService } from './ai/early-warning.service';
 import { ResidentModule } from './residents/resident.module';
+import { ResidentAccessScopeModule } from './resident-access-scope/resident-access-scope.module';
 import { WarningReviewModule } from './warning-reviews/warning-review.module';
 import { CareActionBridgeModule } from './care-action-bridge/care-action-bridge.module';
 import { ResponsibilityAcceptanceModule } from './responsibility-acceptance/responsibility-acceptance.module';
@@ -114,7 +115,7 @@ import { ServicePricingController } from './finance-billing/service-pricing.cont
     ClinicalModule,
     MedicationModule,
     CareTaskExecutionModule,
-    CarePlanGovernanceModule,ResolutionAuthorizationModule,DatabaseModule,ResidentModule,WarningReviewModule,CareActionBridgeModule,ResponsibilityAcceptanceModule,StartReviewAuthorizationModule,
+    CarePlanGovernanceModule,ResolutionAuthorizationModule,DatabaseModule,ResidentModule,ResidentAccessScopeModule,WarningReviewModule,CareActionBridgeModule,ResponsibilityAcceptanceModule,StartReviewAuthorizationModule,
     ReopenAuthorizationModule,
   NutritionHydrationModule,
   ActivityRehabilitationModule,

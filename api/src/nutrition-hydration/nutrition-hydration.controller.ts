@@ -3,9 +3,11 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   InternalServerErrorException,
   Param,
   Post,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import {
@@ -15,12 +17,14 @@ import {
 import {
   NutritionCommand,
 } from './nutrition-hydration.types';
+import { ResidentAccessScopeService } from '../resident-access-scope/resident-access-scope.service';
 
 @Controller('api/nutrition-hydration')
 export class NutritionHydrationController {
   constructor(
     private readonly service:
       NutritionHydrationService,
+    private readonly residentScope: ResidentAccessScopeService,
   ) {}
 
   private handle(error: unknown): never {
@@ -65,7 +69,12 @@ export class NutritionHydrationController {
   async execute(
     @Param('residentId') residentId: string,
     @Body() body: NutritionCommand,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    await this.residentScope.assertClinicalWriteAccess(actorId, actorRole, residentId);
+    body = { ...body, actorId, actorRole } as NutritionCommand;
     try {
       const data =
         await this.service.execute(

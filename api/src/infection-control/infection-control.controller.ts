@@ -1,9 +1,13 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, UnauthorizedException } from '@nestjs/common';
 import { InfectionControlService } from './infection-control.service';
+import { ResidentAccessScopeService } from '../resident-access-scope/resident-access-scope.service';
 
 @Controller('api/infection-control')
 export class InfectionControlController {
-  constructor(private readonly service: InfectionControlService) {}
+  constructor(
+    private readonly service: InfectionControlService,
+    private readonly residentScope: ResidentAccessScopeService,
+  ) {}
 
   @Get('summary')
   summary() {
@@ -11,10 +15,14 @@ export class InfectionControlController {
   }
 
   @Post(':residentId/execute')
-  execute(
+  async execute(
     @Param('residentId') residentId: string,
     @Body() body: any,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
-    return this.service.execute(residentId, body);
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    await this.residentScope.assertClinicalWriteAccess(actorId, actorRole, residentId);
+    return this.service.execute(residentId, { ...body, actorId, actorRole });
   }
 }

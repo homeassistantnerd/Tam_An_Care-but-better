@@ -2,9 +2,11 @@ import {
   Body,
   Controller,
   HttpException,
+  Headers,
   HttpStatus,
   Param,
   Post,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import { CareActionBridgeService } from './care-action-bridge.service';
@@ -25,7 +27,11 @@ export class CareActionBridgeController {
 
     @Body()
     body: any,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    body = { ...body, actorId, actorRole };
 
     try {
 

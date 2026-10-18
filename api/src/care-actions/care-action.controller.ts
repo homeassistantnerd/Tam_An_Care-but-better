@@ -3,9 +3,11 @@ import {
   Controller,
   Get,
   HttpException,
+  Headers,
   HttpStatus,
   Param,
   Post,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import {
@@ -19,6 +21,7 @@ import {
   StartCareActionReviewInput,
   TransferCareActionInput,
 } from './care-action.types';
+import { ResidentAccessScopeService } from '../resident-access-scope/resident-access-scope.service';
 
 
 @Controller('api/care-actions')
@@ -27,6 +30,7 @@ export class CareActionController {
   constructor(
     private readonly service:
       CareActionService,
+    private readonly residentScope: ResidentAccessScopeService,
   ) {}
 
 
@@ -218,7 +222,12 @@ export class CareActionController {
 
     @Body()
     body: AssignCareActionInput,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    await this.residentScope.assertClinicalWriteAccess(actorId, actorRole, residentId);
+    body = { ...body, actorId, actorRole };
 
     try {
 
@@ -262,7 +271,12 @@ export class CareActionController {
 
     @Body()
     body: TransferCareActionInput,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    await this.residentScope.assertClinicalWriteAccess(actorId, actorRole, residentId);
+    body = { ...body, actorId, actorRole };
 
     try {
 
@@ -307,7 +321,12 @@ export class CareActionController {
     @Body()
     body:
       StartCareActionReviewInput,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    await this.residentScope.assertClinicalWriteAccess(actorId, actorRole, residentId);
+    body = { ...body, actorId, actorRole };
 
     try {
 
@@ -378,7 +397,12 @@ export class CareActionController {
 
     @Body()
     body: ResolveCareActionInput,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    await this.residentScope.assertClinicalWriteAccess(actorId, actorRole, residentId);
+    body = { ...body, actorId, actorRole };
 
     try {
 
@@ -422,7 +446,12 @@ export class CareActionController {
 
     @Body()
     body: ReopenCareActionInput,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    await this.residentScope.assertClinicalWriteAccess(actorId, actorRole, residentId);
+    body = { ...body, actorId, actorRole };
 
     try {
 
