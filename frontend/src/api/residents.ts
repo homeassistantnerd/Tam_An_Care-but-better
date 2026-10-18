@@ -103,15 +103,37 @@ export interface OperationalCareViewResponse {
   };
 }
 
+// Use the same Vietnamese given-name ordering for resident dropdowns, lists,
+// and offline read-only display. Sorting never changes stored resident records.
+const viResidentCollator = new Intl.Collator('vi', {
+  sensitivity: 'base',
+  numeric: true,
+});
+
+export function sortResidentsAlphabetically(
+  items: readonly ResidentContextResponse[],
+): ResidentContextResponse[] {
+  const key = (name: string) => {
+    const parts = String(name || '').trim().split(/\s+/u);
+    return parts[parts.length - 1] || '';
+  };
+  return [...items].sort((a, b) =>
+    viResidentCollator.compare(key(a.resident.displayName), key(b.resident.displayName))
+    || viResidentCollator.compare(a.resident.displayName, b.resident.displayName)
+    || a.resident.residentId.localeCompare(b.resident.residentId)
+  );
+}
+
 export async function listResidents(
   actor?: HumanActorSession | null,
 ): Promise<ResidentContextResponse[]> {
-  return apiRequest<ResidentContextResponse[]>(
+  const residents = await apiRequest<ResidentContextResponse[]>(
     '/api/residents',
     {
       actor,
     },
   );
+  return sortResidentsAlphabetically(residents);
 }
 
 export async function getResident(
