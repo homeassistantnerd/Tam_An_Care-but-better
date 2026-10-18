@@ -17,12 +17,14 @@ import {
 import {
   NutritionCommand,
 } from './nutrition-hydration.types';
+import { ResidentAccessScopeService } from '../resident-access-scope/resident-access-scope.service';
 
 @Controller('api/nutrition-hydration')
 export class NutritionHydrationController {
   constructor(
     private readonly service:
       NutritionHydrationService,
+    private readonly residentScope: ResidentAccessScopeService,
   ) {}
 
   private handle(error: unknown): never {
@@ -71,6 +73,7 @@ export class NutritionHydrationController {
     @Headers('x-actor-role') actorRole?: string,
   ) {
     if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    await this.residentScope.assertClinicalWriteAccess(actorId, actorRole, residentId);
     body = { ...body, actorId, actorRole } as NutritionCommand;
     try {
       const data =

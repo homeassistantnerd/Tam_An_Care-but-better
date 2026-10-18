@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
 } from '@nestjs/common';
 
@@ -29,6 +30,12 @@ export type ResidentScopeSql = {
     | 'SUPERVISORY_ALL_ACTIVE_RESIDENTS';
 };
 
+// Roles allowed to write resident clinical records (product decision 2026-10-18).
+// MEDICAL_HEAD is supervisory for writes only; GUARDIAN, NUTRITIONIST,
+// REHABILITATION_SPECIALIST and non-clinical roles are denied until they get a scope.
+const CLINICAL_WRITE_ASSIGNED_ROLES = ['CAREGIVER', 'NURSE', 'PSYCHOLOGIST', 'SOCIAL_WORKER'];
+const CLINICAL_WRITE_SUPERVISORY_ROLES = ['SUPERVISOR', 'ADMIN', 'CARE_MANAGER', 'MEDICAL_HEAD'];
+
 @Injectable()
 export class ResidentAccessScopeService {
   constructor(
@@ -58,10 +65,30 @@ export class ResidentAccessScopeService {
     return null;
   }
 
+  async assertClinicalWriteAccess(
+    actorId: string,
+    actorRoleInput: string,
+    residentId: string,
+  ): Promise<void> {
+    const actorRole =
+      String(actorRoleInput ?? '').trim().toUpperCase();
+
+    const allowed =
+      [...CLINICAL_WRITE_ASSIGNED_ROLES, ...CLINICAL_WRITE_SUPERVISORY_ROLES].includes(actorRole)
+      && await this.canAccessResident(
+        actorId, actorRole as ResidentAccessHumanRole, residentId, CLINICAL_WRITE_SUPERVISORY_ROLES,
+      );
+
+    if (!allowed) {
+      throw new ForbiddenException('Resident access denied');
+    }
+  }
+
   async canAccessResident(
     actorIdInput: string,
     actorRole: ResidentAccessHumanRole,
     residentIdInput: string,
+    supervisoryRoles: string[] = ['SUPERVISOR', 'ADMIN', 'CARE_MANAGER'],
   ): Promise<boolean> {
     const actorId =
       String(actorIdInput ?? '').trim();
@@ -84,7 +111,7 @@ export class ResidentAccessScopeService {
       return false;
     }
 
-    const isSupervisoryRole = ['SUPERVISOR', 'ADMIN', 'CARE_MANAGER'].includes(actorRole);
+    const isSupervisoryRole = supervisoryRoles.includes(actorRole);
 
     if (isSupervisoryRole) {
       const result =

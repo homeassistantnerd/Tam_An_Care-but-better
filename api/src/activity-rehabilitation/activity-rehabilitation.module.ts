@@ -13,9 +13,10 @@ import {
 import {
   ActivityRehabilitationService,
 } from './activity-rehabilitation.service';
+import { ResidentAccessScopeModule } from '../resident-access-scope/resident-access-scope.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [ResidentAccessScopeModule, DatabaseModule],
   controllers: [ActivityRehabilitationController],
   providers: [
     ActivityRehabilitationService,

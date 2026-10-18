@@ -16,11 +16,13 @@ import {
 import {
   RehabCommand,
 } from './activity-rehabilitation.types';
+import { ResidentAccessScopeService } from '../resident-access-scope/resident-access-scope.service';
 
 @Controller('api/activity-rehabilitation')
 export class ActivityRehabilitationController {
   constructor(
     private readonly service: ActivityRehabilitationService,
+    private readonly residentScope: ResidentAccessScopeService,
   ) {}
 
   @Get('test/summary')
@@ -36,6 +38,7 @@ export class ActivityRehabilitationController {
     @Headers('x-actor-role') actorRole?: string,
   ) {
     if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    await this.residentScope.assertClinicalWriteAccess(actorId, actorRole, residentId);
     command = { ...command, actorId, actorRole } as RehabCommand;
     try {
       const data = await this.service.execute(

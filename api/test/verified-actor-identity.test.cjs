@@ -10,6 +10,8 @@ const SPOOF = { actorId: 'TA-SUP-01', actorRole: 'SUPERVISOR' };
 const REVIEW_SPOOF = { reviewerId: 'TA-SUP-01', reviewerRole: 'SUPERVISOR' };
 
 const load = (path, name) => require(`../dist/${path}`)[name];
+// Resident scope is covered by resident-scope-clinical-writes.test.cjs; allow it here.
+const allowScope = { assertClinicalWriteAccess: async () => {} };
 
 // [label, module, class, method, args before (body, actorId, actorRole), spoofed body]
 const execute = (domain, cls) =>
@@ -49,7 +51,7 @@ function stubService() {
 for (const [label, path, cls, method, prefix, spoof = SPOOF] of cases) {
   test(`VERIFIED-ACTOR: ${label} ignores body identity and uses verified headers`, async () => {
     const { service, calls } = stubService();
-    const controller = new (load(path, cls))(service);
+    const controller = new (load(path, cls))(service, allowScope);
     await controller[method](...prefix, { ...spoof, note: 'x' }, VERIFIED.id, VERIFIED.role);
     assert.ok(calls.length > 0, 'service was not called');
     const sent = JSON.stringify(calls.map(c => c.args));
@@ -59,7 +61,7 @@ for (const [label, path, cls, method, prefix, spoof = SPOOF] of cases) {
 
   test(`VERIFIED-ACTOR: ${label} rejects requests without verified headers`, async () => {
     const { service, calls } = stubService();
-    const controller = new (load(path, cls))(service);
+    const controller = new (load(path, cls))(service, allowScope);
     await assert.rejects(
       async () => controller[method](...prefix, { ...spoof }, undefined, undefined),
       e => e.getStatus?.() === 401,
