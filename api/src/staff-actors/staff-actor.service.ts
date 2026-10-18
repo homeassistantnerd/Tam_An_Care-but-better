@@ -682,7 +682,7 @@ export class StaffActorService {
       );
 
     if (!valid) {
-      throw new UnauthorizedException(
+      throw new BadRequestException(
         'Current password is incorrect',
       );
     }

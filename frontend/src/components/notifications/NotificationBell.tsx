@@ -43,12 +43,14 @@ export function NotificationBell() {
     actor?.actorRole === 'ADMIN';
 
   const refreshNotifications = async () => {
-    try {
-      const resData = await listResidents(actor);
-      if (resData && resData.length > 0) {
-        checkAndPublishResidentBirthdayNotifications(resData.map((r) => r.resident));
-      }
-    } catch {}
+    if (actor) {
+      try {
+        const resData = await listResidents(actor);
+        if (resData && resData.length > 0) {
+          checkAndPublishResidentBirthdayNotifications(resData.map((r) => r.resident));
+        }
+      } catch {}
+    }
     setNotifications(getLocalNotifications());
   };
 
@@ -56,7 +58,7 @@ export function NotificationBell() {
     refreshNotifications();
     const interval = setInterval(refreshNotifications, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [actor]);
 
   // Close dropdown on outside click
   useEffect(() => {

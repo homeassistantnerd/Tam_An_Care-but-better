@@ -27,3 +27,14 @@ test('Health reports preserve empty result and do not send client approval statu
  assert.equal(JSON.parse(calls[1].o.body).initialStatus,undefined);
  assert.deepEqual(JSON.parse(calls[2].o.body),{summary:'{}'});
 });
+
+test('Stored session survives reload for every canonical role (COMMUNICATIONS regression)',()=>{
+ const b64=o=>Buffer.from(JSON.stringify(o)).toString('base64url');
+ const roles=['ADMIN','SUPERVISOR','CARE_MANAGER','MEDICAL_HEAD','NURSE','CAREGIVER','NUTRITIONIST','ACCOUNTANT','RECEPTIONIST','PSYCHOLOGIST','SOCIAL_WORKER','REHABILITATION_SPECIALIST','COMMUNICATIONS','HOUSEKEEPING','SECURITY','GUARDIAN'];
+ for(const role of roles){
+  const store={'taman-care-production-access-token':'h.'+b64({sub:'A',role,jti:'j',exp:Math.floor(Date.now()/1000)+3600})+'.s','taman-care-v75-development-actor':JSON.stringify({actorId:'A',actorRole:role})};
+  const window={atob:s=>Buffer.from(s,'base64').toString('binary'),dispatchEvent(){},localStorage:{getItem:k=>store[k]??null,setItem:(k,v)=>{store[k]=v;},removeItem:k=>{delete store[k];}}};
+  const api=load('auth/session.ts',{},{window,Event:function(){}});
+  assert.equal(api.readStoredActor()?.actorRole,role,role);
+ }
+});
