@@ -347,6 +347,29 @@ export class ProductionAuthMiddleware
       );
     }
 
+    // Revalidate the canonical staff identity on EVERY authenticated request.
+    // A still-active session cannot preserve access after account deactivation
+    // or a role change. No client-supplied role or identity is trusted.
+    const currentStaff = await this.db.query<{
+      actor_id: string;
+    }>(
+      `
+        SELECT actor_id
+        FROM staff_actors
+        WHERE actor_id = $1
+          AND status = 'ACTIVE'
+          AND primary_operational_role = $2
+        LIMIT 1
+      `,
+      [actorId, actorRole],
+    );
+
+    if (currentStaff.rows.length !== 1) {
+      throw new UnauthorizedException(
+        'Staff account or role is not active',
+      );
+    }
+
     req.headers[
       'x-actor-id'
     ] = actorId;

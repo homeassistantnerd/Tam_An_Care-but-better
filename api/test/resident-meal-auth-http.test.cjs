@@ -22,7 +22,9 @@ try {
 
 const secret='ci-isolated-jwt-test-secret-key-long-enough';
 const sessionId='ci-active-session';
-const db={query:async(_sql,args)=>({rows:args[0]===sessionId && args[1]==='ci-caregiver' && args[2]==='CAREGIVER'?[{actor_id:args[1],actor_role:args[2]}]:[]})};
+const db={query:async(sql,args)=>sql.includes('FROM staff_actors')
+  ? {rows:args[0]==='ci-caregiver' && args[1]==='CAREGIVER'?[{actor_id:args[0]}]:[]}
+  : {rows:args[0]===sessionId && args[1]==='ci-caregiver' && args[2]==='CAREGIVER'?[{actor_id:args[1],actor_role:args[2]}]:[]}};
 function sign(payload){
   const b=v=>Buffer.from(JSON.stringify(v)).toString('base64url');
   const data=b({alg:'HS256',typ:'JWT'})+'.'+b(payload);
