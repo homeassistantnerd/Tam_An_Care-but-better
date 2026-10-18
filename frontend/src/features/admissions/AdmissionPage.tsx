@@ -1,4 +1,5 @@
 import { EMOTION_OPTIONS, SLEEP_OPTIONS, emotionChoices, sleepChoices, toggleChoice, type Emotion, type Sleep } from '../health-reports/assessment-multi-select';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useActor } from '../../auth/ActorContext';
@@ -600,6 +601,7 @@ function DobDatePicker({ value, onChange, required }: DobDatePickerProps) {
 export function AdmissionPage() {
   const { actor } = useActor();
 
+  const residentQueryClient = useQueryClient();
   const [admissions, setAdmissions] = useState<AdmissionCase[]>([]);
   const [selectedCase, setSelectedCase] = useState<AdmissionCase | null>(null);
   const [busy, setBusy] = useState(false);
@@ -1017,6 +1019,7 @@ export function AdmissionPage() {
       }
 
       await refreshList();
+      await residentQueryClient.invalidateQueries({ queryKey: ['residents'] });
       setIsCreateOpen(false);
       setEditingCase(null);
     } catch (err: any) {
@@ -1195,6 +1198,7 @@ export function AdmissionPage() {
         );
 
       await refreshList();
+      await residentQueryClient.invalidateQueries({ queryKey: ['residents'] });
 
       setMessage(
         `✅ Đã phê duyệt và tiếp nhận chính thức ${res.displayName}. Mã cư dân: ${res.residentCode}. Hồ sơ đã được chuyển sang phân hệ Hồ sơ cư dân.`,
