@@ -10,6 +10,7 @@ import {
 import {
   clearStoredAuthSession,
   readStoredAccessToken,
+  readStoredActor,
 } from '../auth/session';
 
 declare global {
@@ -94,15 +95,17 @@ export async function apiRequest<T>(
       requestHeaders.set('Authorization', `Bearer ${token}`);
     }
 
-    if (actor) {
+    // Callers that forget `actor` would otherwise get 401 "Actor context is required" and be logged out.
+    const effectiveActor = actor ?? (token ? readStoredActor() : null);
+    if (effectiveActor) {
       requestHeaders.set(
         'x-actor-id',
-        actor.actorId,
+        effectiveActor.actorId,
       );
 
       requestHeaders.set(
         'x-actor-role',
-        actor.actorRole,
+        effectiveActor.actorRole,
       );
     }
 
