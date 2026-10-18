@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "prebuild": "node scripts/check-api-base.mjs",
     "test": "node --experimental-strip-types --test test/**/*.test.ts"
   },
   "dependencies": {

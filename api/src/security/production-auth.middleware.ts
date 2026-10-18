@@ -17,8 +17,10 @@ import { ConfigService } from '../config/config.service';
 type ActorRole =
   | 'CAREGIVER'
   | 'NURSE'
+  | 'MEDICAL_HEAD'
   | 'CARE_MANAGER'
-  | 'SUPERVISOR';
+  | 'SUPERVISOR'
+  | 'ADMIN';
 
 interface JwtPayload {
   sub?: unknown;
@@ -50,6 +52,8 @@ const VALID_ROLES =
     'CAREGIVER',
     'NURSE',
     'CARE_MANAGER',
+    'MEDICAL_HEAD',
+    'ADMIN',
     'SUPERVISOR',
   ]);
 

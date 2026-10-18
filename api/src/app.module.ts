@@ -71,8 +71,10 @@ import { ResidentLeaveModule } from './resident-leave/resident-leave.module';
 import { WorkforceModule } from './workforce/workforce.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ConfigModule } from './config/config.module';
+import { PaperRecordModule } from './paper-records/paper-record.module';
 @Module({imports:[
     ConfigModule,
+    PaperRecordModule,
     NotificationsModule,
     WorkforceModule,
     ResidentLeaveModule,
