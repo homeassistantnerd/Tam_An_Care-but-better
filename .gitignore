@@ -46,6 +46,27 @@ __pycache__/
 *.pyc
 # Production secrets / database artifacts
 .env.*
+!.env.example
+*.tsbuildinfo
+test-results/
+
+# Database dumps, backups and restore artifacts (NEVER COMMIT)
+/database/backups/
+**/backups/
 *.dump
 *.sql.gz
-*.tsbuildinfo
+*.pgdump
+*.backup
+*.tar.gz
+*.age
+*.gpg
+
+# Sensitive local exports and credentials
+*.p12
+*.pfx
+*.jks
+*.kdbx
+*.sqlite
+*.sqlite3
+*.db
+*.csv.gz
