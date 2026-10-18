@@ -5,11 +5,16 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-taman}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taman_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-taman_care}
+      TAMANCARE_ROOT: /tamancare
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+      # Runs only on an empty volume: schema + every migration (database/bootstrap.sh), then demo data.
+      - ./database:/tamancare/database:ro
+      - ./api/migrations:/tamancare/api/migrations:ro
+      - ./ops/finance:/tamancare/ops/finance:ro
+      - ./database/bootstrap.sh:/docker-entrypoint-initdb.d/001_bootstrap.sh:ro
       - ./database/seeds/001_demo_data.sql:/docker-entrypoint-initdb.d/002_demo_data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taman} -d ${POSTGRES_DB:-taman_care}"]

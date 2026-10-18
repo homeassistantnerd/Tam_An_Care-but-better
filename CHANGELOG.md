@@ -1,5 +1,30 @@
 # Changelog
 
+## [2026-10-18] — Branch consolidation
+
+All 41 remote branches were merged into `main` (each one is an ancestor of `main`; tips are kept as `archive/*` tags).
+
+### Added (from branches)
+- Production Test baseline (2026-10-02), resident paper record registry, resident meal registration with RBAC.
+- Finance billing: invoices, receipts, payment allocation, service price catalogue, canonical service contracts
+  (draft, sign-off, approval), monthly operating result (P&L) — all fail-closed behind `TAMANCARE_*` flags.
+- Guardian resident scope, staff RBAC with per-request revalidation, deployed RBAC release candidate
+  (guardian/assigned-resident endpoints, vital-sign recording, psychosocial quick entry, canonical 16-role list).
+- Admission DOB correction (year-only birth dates, demographic audit), admission ↔ resident sync,
+  health-sync care view, multi-select assessments, psychosocial baseline, alphabetical (Vietnamese) resident order,
+  service contract article 5 / discount fields, mobile back navigation, notification bell without demo data.
+
+### Changed
+- `database/bootstrap.sh` initialises an empty database in a fixed order (Docker initdb uses it);
+  `20261018_018_production_schema_parity.sql` adds objects that existed only on Production Test.
+- One CI workflow (`ci.yml`): build, unit/regression tests, PostgreSQL integration suites.
+- Frontend Nginx keeps `sw.js`/`index.html`/`config.js` uncached so PWA clients pick up new releases.
+- `staff-bootstrap.js` also sets the first Supervisor's password (`TAMANCARE_BOOTSTRAP_PASSWORD`).
+
+### Removed
+- ~45 branch-specific GitHub workflows, evidence/release-gate scripts, the frozen `release/rbac-20261017` source snapshot
+  (its code is merged), `.agents/`, Production Test compose overrides, runtime patch scripts and the stale standalone zip.
+
 ## [2026-09-02] — Codebase Cleanup
 
 ### Removed

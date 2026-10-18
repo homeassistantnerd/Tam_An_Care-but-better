@@ -1,6 +1,7 @@
 import {
   Pool,
 } from 'pg';
+import { pbkdf2Sync, randomBytes } from 'crypto';
 import { readSecretOrEnv } from '../config/env';
 
 type Arguments = {
@@ -80,6 +81,15 @@ async function main(): Promise<void> {
   }
 
   const args = parseArguments();
+
+  // The first Supervisor needs a password to log in; same PBKDF2 parameters as StaffActorService.
+  const password =
+    readSecretOrEnv('TAMANCARE_BOOTSTRAP_PASSWORD', 'TAMANCARE_BOOTSTRAP_PASSWORD_FILE') || '';
+  if (password.length < 12) {
+    throw new Error(
+      'TAMANCARE_BOOTSTRAP_PASSWORD (or _FILE) must contain at least 12 characters',
+    );
+  }
 
   const pool = new Pool({
     connectionString: databaseUrl,
@@ -190,6 +200,14 @@ async function main(): Promise<void> {
         'Bootstrap did not create exactly one Supervisor',
       );
     }
+
+    const salt = randomBytes(16).toString('hex');
+    await client.query(
+      `INSERT INTO auth_credentials
+         (actor_id, password_hash, password_salt, password_iterations, password_digest)
+       VALUES ($1, $2, $3, 210000, 'sha256')`,
+      [args.actorId, pbkdf2Sync(password, salt, 210000, 32, 'sha256').toString('hex'), salt],
+    );
 
     await client.query('COMMIT');
 

@@ -5,43 +5,63 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  api:
-    name: Backend API Build & Test
+  build-test:
+    name: Build, unit and regression tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: api/package-lock.json
+          cache: npm
+          cache-dependency-path: |
+            api/package-lock.json
+            frontend/package-lock.json
+      # Each workspace keeps its own lockfile (Docker builds them separately), so skip the root workspace.
       - name: Install dependencies
-        working-directory: api
-        run: npm ci
-      - name: Build API
-        working-directory: api
+        run: |
+          npm ci --workspaces=false --prefix api --no-audit --no-fund
+          npm ci --workspaces=false --prefix frontend --no-audit --no-fund
+      - name: Build API and frontend
         run: npm run build
-      - name: Run Tests
-        working-directory: api
-        run: npm test --if-present
+      - name: API, frontend and ops regression tests
+        run: npm test
+      - name: Secret and security audit
+        run: npm run security:audit
 
-  frontend:
-    name: Frontend PWA Build
+  integration:
+    name: PostgreSQL integration tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: finance_ci
+          POSTGRES_PASSWORD: finance_ci_only
+          POSTGRES_DB: finance_ci
+        ports:
+          - 127.0.0.1:5432:5432
+        options: >-
+          --health-cmd "pg_isready -U finance_ci -d finance_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      - name: Install dependencies
-        working-directory: frontend
-        run: npm ci
-      - name: Build Frontend
-        working-directory: frontend
-        run: npm run build
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - name: Install API dependencies
+        run: npm ci --workspaces=false --prefix api --no-audit --no-fund
+      - name: Schema bootstrap, meal, DOB, finance and contract suites
+        run: npm run test:integration

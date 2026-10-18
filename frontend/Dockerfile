@@ -10,6 +10,9 @@ RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime
 
+# Default API upstream for the nginx template; override at runtime when the API is elsewhere.
+ENV API_UPSTREAM_URL=http://api:3000
+
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY docker-entrypoint.d/40-generate-config.sh /docker-entrypoint.d/40-generate-config.sh

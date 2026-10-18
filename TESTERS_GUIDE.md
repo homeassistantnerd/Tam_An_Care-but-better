@@ -31,6 +31,8 @@ Tài liệu này hướng dẫn chi tiết cách cài đặt bản **Full Chức
 
 ## 🧪 2. CHẾ ĐỘ TESTER & DANH SÁCH 14 TÀI KHOẢN CHẠY THỬ
 
+> **Lưu ý:** Ở bản production (`NODE_ENV=production`) mọi tài khoản phải đăng nhập bằng mật khẩu qua máy chủ; nút chuyển vai trò nhanh chỉ hiện khi môi trường thử bật `TAMAN_ENABLE_DEV_SWITCHER=true`. Dữ liệu demo (`database/seeds/001_demo_data.sql`) dùng mật khẩu chung `TamAn@2026`.
+
 Hệ thống được tích hợp sẵn nút **`🧪 Chế Độ Tester`** màu vàng trên góc phải Topbar (hoặc ở trang chủ). Bấm vào nút này để mở **Bảng Điều Khiển Chạy Thử Nghiệm Multi-Role**.
 
 Testers có thể bấm nút **`⚡ Đăng Nhập Vai Trò Này`** để chuyển đổi ngay lập tức sang 1 trong 14 vai trò làm việc thực tế:

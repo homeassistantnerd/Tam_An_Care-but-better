@@ -1,6 +1,6 @@
 # Viện Dưỡng Lão Tâm An Care V7.5 — Enterprise Elderly Care Management Platform
 
-[![Tam An Care CI](https://github.com/homeassistantnerd/Tam_An_Care/actions/workflows/ci.yml/badge.svg)](https://github.com/homeassistantnerd/Tam_An_Care/actions/workflows/ci.yml)
+[![Tam An Care CI](https://github.com/homeassistantnerd/Tam_An_Care-but-better/actions/workflows/ci.yml/badge.svg)](https://github.com/homeassistantnerd/Tam_An_Care-but-better/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-12.0.1-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -36,7 +36,12 @@ Tam_An_Care/
 │   │   └── types/             # Shared TypeScript domain contracts
 │   └── test/                  # Frontend smoke & RBAC verification tests
 ├── database/
-│   └── schema.sql             # Canonical PostgreSQL DDL (residents, admissions, audit)
+│   ├── schema.sql             # Canonical PostgreSQL DDL (residents, admissions, audit)
+│   ├── migrations/            # Ordered migrations; rbac-migrations/ for resident-scope RBAC
+│   ├── seeds/                 # Demo data (never load in production)
+│   └── bootstrap.sh           # Initialise an empty DB: schema + every migration, in order
+├── ops/finance/               # Finance & service-contract migrations (v22 001 → v32 010)
+├── ops/ci/                    # Finance/contract regression tests (run by npm test / CI)
 ├── deploy/                    # Production deployment configurations (Nginx, SSL, Systemd)
 ├── docs/                      # Clinical specifications, domain logic & deployment guides
 │   └── domain/                # Preserved clinical standards, RBAC matrix & operations
@@ -108,11 +113,16 @@ Install dependencies across all workspaces in a single command from the reposito
 
 ```bash
 # Clone the repository
-git clone https://github.com/homeassistantnerd/Tam_An_Care.git
-cd Tam_An_Care
+git clone https://github.com/homeassistantnerd/Tam_An_Care-but-better.git
+cd Tam_An_Care-but-better
 
-# Install all workspace dependencies
-npm install
+# Install each workspace from its own lockfile
+npm ci --workspaces=false --prefix api
+npm ci --workspaces=false --prefix frontend
+
+# Create the database: schema + all migrations, then demo data (see docs/DEPLOYMENT.md)
+PGHOST=localhost PGUSER=taman PGPASSWORD=... PGDATABASE=taman_care npm run db:bootstrap
+npm run db:seed
 ```
 
 ### 2. Local Development Mode
@@ -122,7 +132,7 @@ Start both the backend API and frontend development servers concurrently:
 ```bash
 # Terminal 1: Start Backend API (NestJS with hot reload)
 npm run start:api
-# API will be live at http://localhost:3000 (Swagger docs at http://localhost:3000/api/docs)
+# API will be live at http://localhost:3000 (Swagger docs at http://localhost:3000/docs outside production)
 
 # Terminal 2: Start Frontend PWA (Vite dev server)
 npm run start:frontend
@@ -131,7 +141,7 @@ npm run start:frontend
 
 ### 3. Docker Compose Deployment
 
-Run the complete stack (PostgreSQL 16 + NestJS API) with pre-configured schemas:
+Run the complete stack (PostgreSQL 16 + NestJS API + Nginx web on :5173). On an empty volume PostgreSQL runs `database/bootstrap.sh` and loads demo data (staff `TA-DIR-01`, password `TamAn@2026`):
 
 ```bash
 docker compose up -d --build
@@ -149,8 +159,11 @@ curl http://localhost:3000/api/health/ready
 The repository utilizes Node.js native test runner and type-stripping for lightning-fast test execution without transpilation overhead.
 
 ```bash
-# Run all smoke tests across both workspaces (API + Frontend)
+# API + frontend tests and the ops/ci finance/contract regression suite (no database needed)
 npm test
+
+# PostgreSQL-backed suites (schema bootstrap, meals, DOB, finance, contracts) against a disposable PostgreSQL 16
+npm run test:integration
 
 # Run backend API tests only
 npm run test:api
@@ -189,12 +202,12 @@ npm run build
 
 For enterprise production deployments on Debian Linux:
 
-1. Refer to the comprehensive [Debian & Docker Deployment Guide](docs/DEPLOYMENT_DEBIAN_DOCKER.md).
-2. Configure production secrets under `deploy/production/secrets/`.
-3. Launch with production compose:
-   ```bash
-   docker compose -f deploy/production/docker-compose.production.yml --env-file deploy/production/.env up -d --build
-   ```
+Follow the [deployment guide](docs/DEPLOYMENT.md) (Vietnamese): local development, Docker quick start,
+production with HTTPS + Docker secrets, first Supervisor account, and upgrading a database that already holds data.
+
+```bash
+docker compose -f deploy/production/docker-compose.production.yml --env-file deploy/production/.env up -d --build
+```
 
 ---
 
@@ -207,7 +220,8 @@ For enterprise production deployments on Debian Linux:
   - [Medication Inventory & eMAR Workflows](docs/domain/taman-care-medication-inventory.md)
   - [Billing & Financial Invoicing](docs/domain/taman-care-billing.md)
   - [Family Portal Specifications](docs/domain/taman-care-family-portal.md)
-- **Deployment Guide**: [docs/DEPLOYMENT_DEBIAN_DOCKER.md](docs/DEPLOYMENT_DEBIAN_DOCKER.md)
+- **Deployment Guide**: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) · [Release governance](docs/RELEASE_GOVERNANCE.md)
+- **Feature specifications**: [docs/features/](docs/features/) · **Finance**: [docs/finance/](docs/finance/)
 - **Testing Guide**: [TESTERS_GUIDE.md](TESTERS_GUIDE.md)
 - **Design Specifications**: [DESIGN.md](DESIGN.md)
 

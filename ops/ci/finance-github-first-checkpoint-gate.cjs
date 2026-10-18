@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '../..');
 const read = p => fs.readFileSync(path.join(root,p),'utf8');
-const manifest = JSON.parse(read('docs/finance-checkpoint-porting-manifest-20261012.json'));
+const manifest = JSON.parse(read('docs/finance/checkpoint-porting-manifest-20261012.json'));
 assert.equal(manifest.serverCandidatesTransferred,false,'Cannot claim porting before source transfer and equivalence tests');
 assert.equal(manifest.release.status,'NO_GO');
 for (const v of ['v169','v174','v175','v176','v177','v1782','v179','v180','v1811','v182','v183']) {

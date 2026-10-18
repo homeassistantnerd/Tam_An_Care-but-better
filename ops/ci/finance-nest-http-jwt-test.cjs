@@ -40,6 +40,9 @@ process.env.TAMANCARE_FINANCE_WRITE_ROLES='ACCOUNTANT';
 process.env.TAMANCARE_FINANCE_WRITE_ENABLED='true';
 const identity={actorId:'CI_USER',role:'ACCOUNTANT',sessionId:'CI_ACTIVE'};
 const db={query:async(sql,values)=>{
+ // Per-request canonical staff revalidation: [actorId, role, sessionId].
+ if(/FROM staff_actors/.test(sql))
+  return {rows:values[0]===identity.actorId&&['ACCOUNTANT','CAREGIVER'].includes(values[1])?[{actor_id:values[0]}]:[]};
  assert.match(sql,/auth_sessions/);
  const [session,actor,role]=values;
  if(session===identity.sessionId&&actor===identity.actorId&&['ACCOUNTANT','CAREGIVER'].includes(role))

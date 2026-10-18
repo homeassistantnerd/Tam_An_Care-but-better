@@ -49,8 +49,20 @@ CREATE TABLE public.auth_sessions (
   actor_id text NOT NULL,
   actor_role text NOT NULL,
   revoked_at timestamptz,
-  expires_at timestamptz NOT NULL
+  expires_at timestamptz NOT NULL,
+  issued_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- The auth middleware revalidates the current staff account and role on every request.
+CREATE TABLE public.staff_actors (
+  actor_id text PRIMARY KEY,
+  primary_operational_role text NOT NULL,
+  status text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now() - interval '1 minute'
+);
+INSERT INTO public.staff_actors(actor_id,primary_operational_role,status) VALUES
+('TEST_ACTOR','ACCOUNTANT','ACTIVE'),
+('TEST_CARE_ACTOR','CAREGIVER','ACTIVE');
 
 CREATE TABLE public.residents (
   resident_id text PRIMARY KEY
@@ -59,7 +71,7 @@ CREATE TABLE public.residents (
 INSERT INTO public.auth_sessions VALUES
 ('TEST_ACTIVE','TEST_ACTOR','ACCOUNTANT',
  NULL,now()+interval '1 hour'),
-('TEST_CARE','TEST_ACTOR','CAREGIVER',
+('TEST_CARE','TEST_CARE_ACTOR','CAREGIVER',
  NULL,now()+interval '1 hour'),
 ('TEST_REVOKED','TEST_ACTOR','ACCOUNTANT',
  now(),now()+interval '1 hour');

@@ -89,11 +89,11 @@ Module({
   providers:[{provide:DbMarker,useValue:db}],
 })(TestModule);
 
-function jwt(role='ACCOUNTANT',session='TEST_ACTIVE') {
+function jwt(role='ACCOUNTANT',session='TEST_ACTIVE',sub='TEST_ACTOR') {
   const encode=o=>Buffer.from(JSON.stringify(o)).toString('base64url');
   const h=encode({alg:'HS256',typ:'JWT'});
   const p=encode({
-    sub:'TEST_ACTOR',
+    sub,
     role,
     jti:session,
     exp:Math.floor(Date.now()/1000)+300,
@@ -146,7 +146,7 @@ async function main() {
     assert.equal((await post(null,body)).status,401);
 
     assert.equal(
-      (await post(jwt('CAREGIVER','TEST_CARE'),body)).status,
+      (await post(jwt('CAREGIVER','TEST_CARE','TEST_CARE_ACTOR'),body)).status,
       403
     );
 

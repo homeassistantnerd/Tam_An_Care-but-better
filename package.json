@@ -9,10 +9,13 @@
   ],
   "scripts": {
     "build": "npm run build --workspace=api && npm run build --workspace=frontend",
-    "test": "npm run test --workspace=api && npm run test --workspace=frontend",
+    "test": "npm run test --workspace=api && npm run test --workspace=frontend && bash scripts/run-ops-tests.sh",
     "test:api": "npm run test --workspace=api",
     "test:frontend": "npm run test --workspace=frontend",
+    "test:ops": "bash scripts/run-ops-tests.sh",
+    "test:integration": "npm run build --workspace=api && bash scripts/ci-integration.sh",
     "security:audit": "node scripts/security-audit.mjs",
+    "db:bootstrap": "sh database/bootstrap.sh",
     "db:seed": "node scripts/seed-demo-data.mjs",
     "start:api": "npm run start:dev --workspace=api",
     "start:frontend": "npm run dev --workspace=frontend"

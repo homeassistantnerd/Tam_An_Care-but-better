@@ -3,12 +3,15 @@ CREATE TABLE public.auth_sessions (
  actor_id text NOT NULL,
  actor_role text NOT NULL,
  revoked_at timestamptz,
- expires_at timestamptz NOT NULL
+ expires_at timestamptz NOT NULL,
+ issued_at timestamptz NOT NULL DEFAULT now()
 );
+-- updated_at: the auth middleware rejects sessions issued before the last account change.
 CREATE TABLE public.staff_actors (
  actor_id text PRIMARY KEY,
  status text NOT NULL,
- primary_operational_role text NOT NULL
+ primary_operational_role text NOT NULL,
+ updated_at timestamptz NOT NULL DEFAULT now() - interval '1 minute'
 );
 CREATE TABLE public.residents (
  resident_id text PRIMARY KEY,

@@ -6,10 +6,16 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB_REQUIRED}
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER_REQUIRED}
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      TAMANCARE_ROOT: /tamancare
     secrets:
       - postgres_password
     volumes:
       - tamancare_postgres_data:/var/lib/postgresql/data
+      # Initialises schema + migrations only when the data volume is empty (first deployment).
+      - ../../database:/tamancare/database:ro
+      - ../../api/migrations:/tamancare/api/migrations:ro
+      - ../../ops/finance:/tamancare/ops/finance:ro
+      - ../../database/bootstrap.sh:/docker-entrypoint-initdb.d/001_bootstrap.sh:ro
     healthcheck:
       test:
         [

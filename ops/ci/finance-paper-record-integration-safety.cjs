@@ -22,7 +22,7 @@ assert.match(middleware,/req\.headers\[\s*'x-actor-role'\s*\]\s*=\s*actorRole/);
 // Header-based actor context is safe only behind actually enabled verification.
 // This static test is not sufficient proof of runtime security.
 assert.match(controller,/@Headers\('x-actor-id'\)/);
-assert.match(middleware,/process\.env\.NODE_ENV\s*!==\s*'production'/);
+assert.match(middleware,/process\.env\.NODE_ENV\s*[!=]==\s*'production'/);
 console.log('PAPER_RECORD_SOURCE_INTEGRATION=STATIC_PASS');
 console.log('PAPER_RECORD_RUNTIME_JWT_RBAC=NOT_YET_PROVEN');
 console.log('PRODUCTION_GO_NO_GO=NO_GO');

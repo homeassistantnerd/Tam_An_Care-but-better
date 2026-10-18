@@ -6,6 +6,7 @@ import {
   hasCapability,
   ROLE_LABELS,
   CAREGIVER_ASSIGNMENTS,
+  getAssignedResidentIdsForActor,
   ROLE_CAPABILITIES,
   type HumanActorRole,
 } from '../src/auth/role-policy.ts';
@@ -81,11 +82,9 @@ describe('Frontend RBAC & Role Policy Smoke Tests', () => {
     }
   });
 
-  it('should maintain valid assigned resident scopes for caregivers', () => {
-    assert.ok(CAREGIVER_ASSIGNMENTS['Trần Thị Mai']);
-    assert.ok(CAREGIVER_ASSIGNMENTS['Hoàng Văn Tuấn']);
-    assert.ok(CAREGIVER_ASSIGNMENTS['Đặng Thị Hoa']);
-    assert.strictEqual(CAREGIVER_ASSIGNMENTS['Trần Thị Mai'].includes('res-demo-001'), true);
+  it('should not hard-code resident scopes in the client (assignments are server-derived)', () => {
+    assert.deepStrictEqual(CAREGIVER_ASSIGNMENTS, {});
+    assert.deepStrictEqual(getAssignedResidentIdsForActor('Trần Thị Mai', 'Trần Thị Mai'), []);
   });
 });
 
