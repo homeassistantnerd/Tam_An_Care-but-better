@@ -132,6 +132,8 @@ export async function getResident(
   );
 }
 
+// Security-sensitive endpoint: never substitute mock/localStorage data for an
+// API denial, unavailable server, or missing resident. Caller handles 401/403/404.
 export async function getResidentCareView(
   residentId: string,
   actor: HumanActorSession,
