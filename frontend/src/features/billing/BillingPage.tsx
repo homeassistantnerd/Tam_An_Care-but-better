@@ -31,6 +31,7 @@ import {
   SpecialDiscountPolicy,
 } from '../../api/billing';
 import { LoadingState, ErrorState } from '../../components/feedback/FeedbackStates';
+import { ServicePriceCatalogPanel } from './ServicePriceCatalogPanel';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; badgeClass: string; icon: string }> = {
   PENDING: { label: 'Chờ thanh toán', badgeClass: 'badge-warning', icon: '⏳' },
@@ -406,6 +407,21 @@ export default function BillingPage() {
   // Helper formatters
   const formatNum = (num: number) => (num ? num.toLocaleString('vi-VN') : '0');
   const formatVndText = (num: number) => `${formatNum(num)} đ`;
+
+  if (invoicesQuery.isError || receiptsQuery.isError || pricingQuery.isError || detailedFeeNoticesQuery.isError) {
+    if (activeTab === 'pricing') {
+      return <main className="page"><ServicePriceCatalogPanel actor={actor} /></main>;
+    }
+    return (
+      <main className="page">
+        <ErrorState
+          title="Finance chưa kết nối nguồn dữ liệu đã xác minh"
+          description="Không hiển thị số 0 hoặc dữ liệu mẫu thay cho hóa đơn, phiếu thu hay thông báo thu phí. Bảng giá chính thức có thể được mở riêng; quyền đọc và ghi sẽ do backend xác minh."
+        />
+        <button type="button" className="btn btn-neutral" onClick={() => setActiveTab('pricing')}>Mở bảng giá dịch vụ</button>
+      </main>
+    );
+  }
 
   return (
     <div className="page-container">

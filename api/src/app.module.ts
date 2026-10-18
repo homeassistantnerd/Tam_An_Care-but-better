@@ -72,6 +72,15 @@ import { WorkforceModule } from './workforce/workforce.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ConfigModule } from './config/config.module';
 import { PaperRecordModule } from './paper-records/paper-record.module';
+import { FinanceReadController } from './finance-billing/finance-read.controller';
+import { FinanceWriteController } from './finance-billing/finance-write.controller';
+import { FinanceBillingService } from './finance-billing/finance-billing.service';
+import { MonthlyOperatingResultService } from './finance-billing/monthly-operating-result.service';
+import { CanonicalServiceContractsController } from './finance-billing/canonical-service-contracts.controller';
+import { CanonicalContractDraftController } from './finance-billing/canonical-contract-draft.controller';
+import { ContractSignoffController } from './finance-billing/contract-signoff.controller';
+import { ServicePricingController } from './finance-billing/service-pricing.controller';
+
 @Module({imports:[
     ConfigModule,
     PaperRecordModule,
@@ -109,5 +118,5 @@ import { PaperRecordModule } from './paper-records/paper-record.module';
     ReopenAuthorizationModule,
   NutritionHydrationModule,
   ActivityRehabilitationModule,
-],controllers:[HealthController,AiEngineController,AiGovernanceController,EarlyWarningController,CareActionController],providers:[AiEngineService,AiGatewayService,EarlyWarningService,CareActionRepository,CareActionService]})
+],controllers:[HealthController,AiEngineController,AiGovernanceController,EarlyWarningController,CareActionController,FinanceReadController,FinanceWriteController,CanonicalServiceContractsController,CanonicalContractDraftController,ContractSignoffController,ServicePricingController],providers:[AiEngineService,AiGatewayService,EarlyWarningService,CareActionRepository,CareActionService,FinanceBillingService,MonthlyOperatingResultService]})
 export class AppModule {}

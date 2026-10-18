@@ -1,0 +1,173 @@
+'use strict';
+// Finance V2.9.74: isolated controller integration with an in-memory DB stub.
+// NO PostgreSQL, NO network, NO fixtures persisted, NO production identities.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { createRequire } = require('node:module');
+const apiRequire=createRequire(path.join(__dirname,'..','..','api','package.json'));
+const { PATH_METADATA, METHOD_METADATA } = apiRequire('@nestjs/common/constants');
+
+function findCompiled(root, filename) {
+  if (!fs.existsSync(root)) throw Error('API_DIST_NOT_FOUND');
+  const found = [];
+  function walk(folder) {
+    for (const x of fs.readdirSync(folder, { withFileTypes: true })) {
+      const next = path.join(folder, x.name);
+      if (x.isDirectory()) walk(next);
+      else if (x.name === filename) found.push(next);
+    }
+  }
+  walk(root);
+  assert.equal(found.length, 1, 'Expected precisely one '+filename);
+  return found[0];
+}
+const dist=path.join(__dirname,'..','..','api','dist');
+const controllerPath=findCompiled(dist,'finance-read.controller.js');
+const identityPath=findCompiled(dist,'verified-finance-identity.js');
+// Build can omit dependency output when using incremental compiler cache.
+// Inject a *test-only* dependency for the controller's decorator metadata.
+// This is not a replacement for production runtime compatibility checks.
+const Module=require('node:module');
+const load=Module._load;
+Module._load=function(request,parent,isMain){
+  if(request==='../database/database.service' &&
+     parent && parent.filename===controllerPath){
+    return { DatabaseService: class IsolatedDatabaseServiceMarker {} };
+  }
+  if(request==='./monthly-operating-result.service' &&
+     parent && parent.filename===controllerPath){
+    return { MonthlyOperatingResultService: class IsolatedMonthlyResultMarker {} };
+  }
+  return load.apply(this,arguments);
+};
+let FinanceReadController;
+try {
+  ({ FinanceReadController }=require(controllerPath));
+} finally {
+  Module._load=load;
+}
+const { publishVerifiedFinanceIdentity, readVerifiedFinanceIdentity }=require(identityPath);
+
+const roles=['ADMIN','SUPERVISOR','ACCOUNTANT'];
+process.env.TAMANCARE_FINANCE_READ_ROLES=roles.join(',');
+process.env.TAMANCARE_FINANCE_CENTERWIDE_READ_ROLES=roles.join(',');
+
+const identity={actorId:'ci-actor',actorRole:'ACCOUNTANT',sessionId:'ci-session'};
+const queries=[];
+const db={
+  async query(sql,values) {
+    const normalized=sql.trim();
+    assert.match(normalized,/^SELECT\b/i,'Finance Read must perform only SELECT');
+    queries.push({sql:normalized,values});
+    if (normalized.includes('FROM auth_sessions')) {
+      return {rows:[{actor_id:values[1],actor_role:values[2]}]};
+    }
+    if (normalized.includes('FROM information_schema.columns')) {
+      return {rows:[{available:true}]};
+    }
+    if (normalized.includes('FROM public.finance_source_links')) {
+      return {rows:[{source_domain:'BILLING',source_type:'INVOICE',source_id:'ci-invoice',posting_kind:'REVENUE',finance_entry_id:'ci-entry',entry_exists:true}]};
+    }
+    if (normalized.includes('FROM billing_invoice_items')) {
+      return {rows:[]};
+    }
+    if (normalized.includes('FROM billing_receipts')) {
+      return {rows:[]};
+    }
+    if (normalized.includes('FROM billing_invoices') || normalized.includes('FROM public.billing_invoices')) {
+      return {rows:[{invoice_id:'ci-invoice', invoice_code:'CI',
+        resident_id:'ci-resident',contract_id:'ci-contract',
+        billing_month:'2026-10-01',status:'ISSUED',
+        source_snapshot:{schemaVersion:'FINANCE_INVOICE_SNAPSHOT_V1',lines:[]},
+        source_snapshot_sha256:'a'.repeat(64),issued_at:'2026-10-05T12:00:00.000Z',
+        snapshot_integrity:'VERIFIED',
+        total_amount_vnd:'100',allocated_amount_vnd:'0',
+        balance_vnd:'100'}]};
+    }
+    throw Error('UNEXPECTED_SQL_TABLE');
+  }
+};
+const monthly={
+  async read(month){
+    return {source:'POSTGRESQL',ledgerSchemaReady:false,missingColumns:['amount_vnd'],
+      month,state:'CHUA_DU_DU_LIEU',revenueVnd:null,expenseVnd:null,profitVnd:null,
+      revenueEntries:0,expenseEntries:0,
+      reasons:['LEDGER_COVERAGE_UNVERIFIED','SOURCE_RECONCILIATION_PENDING']};
+  }
+};
+const app=new FinanceReadController(db,monthly);
+const req=(actorRole=identity.actorRole)=>{const request={};publishVerifiedFinanceIdentity(request,{...identity,actorRole});return request;};
+const methods=[
+  ['getInvoiceBalance','invoices/:invoiceId/balance'],
+  ['getMonthlyOperatingResult','operating-result/month/:month'],
+  ['listInvoicesByMonth','invoices/month/:month'],
+  ['getInvoiceWithItems','invoices/:invoiceId'],
+  ['listLatestReceipts','receipts'],
+  ['listReceiptsForInvoice','receipts/invoice/:invoiceId'],
+  ['getInvoiceLedgerLinks','invoices/:invoiceId/ledger-links']
+];
+async function main(){
+  assert.equal(Reflect.getMetadata(PATH_METADATA,FinanceReadController),'api/finance-read');
+  const defined=Object.getOwnPropertyNames(FinanceReadController.prototype);
+  const declared=defined.filter(x=>x!=='constructor' && Reflect.getOwnMetadata(PATH_METADATA,FinanceReadController.prototype[x])!==undefined);
+  assert.equal(declared.length,7,'Exactly seven HTTP endpoints required');
+  for(const [method,route] of methods) {
+    assert.equal(Reflect.getMetadata(PATH_METADATA,FinanceReadController.prototype[method]),route);
+    assert.equal(Reflect.getMetadata(METHOD_METADATA,FinanceReadController.prototype[method]),0,'Must be GET');
+  }
+  for(const role of roles) {
+    const r={};publishVerifiedFinanceIdentity(r,{...identity,actorRole:role});
+    // Return matching verified session role, not user-supplied HTTP headers.
+    const old=db.query;
+    db.query=async(s,v)=>s.includes('FROM auth_sessions')
+      ? {rows:[{actor_id:identity.actorId,actor_role:role}]}
+      : old(s,v);
+    await app.listLatestReceipts(r);
+    db.query=old;
+  }
+  await app.getInvoiceBalance(req(),'ci-invoice');
+  const adminRequest=req('ADMIN');
+  assert.equal(readVerifiedFinanceIdentity(adminRequest).actorRole,'ADMIN');
+  const monthlyOut=await app.getMonthlyOperatingResult(adminRequest,'2026-10');
+  assert.equal(monthlyOut.state,'CHUA_DU_DU_LIEU');
+  assert.equal(monthlyOut.profitVnd,null);
+  await assert.rejects(app.getMonthlyOperatingResult(req('ACCOUNTANT'),'2026-10'),e=>e.getStatus?.()===403);
+  await app.listInvoicesByMonth(req(),'2026-10');
+  const invoiceDetail=await app.getInvoiceWithItems(req(),'ci-invoice');
+  assert.equal(invoiceDetail.invoice.snapshot_integrity,'VERIFIED');
+  await app.listLatestReceipts(req());
+  await app.listReceiptsForInvoice(req(),'ci-invoice');
+  const linked=await app.getInvoiceLedgerLinks(req(),'ci-invoice');
+  assert.equal(linked.status,'LINK_PRESENT_REVENUE_UNVERIFIED');
+  assert.equal(linked.revenuePostedAutomatically,false);
+  const denied=[
+    ()=>app.listLatestReceipts({}),
+    ()=>app.getMonthlyOperatingResult({},'2026-10'),
+    async()=>{const r={};publishVerifiedFinanceIdentity(r,{...identity,actorRole:'CAREGIVER'});return app.listLatestReceipts(r)},
+    async()=>{const r=req(); const old=db.query;db.query=async()=>({rows:[]});try{return await app.listLatestReceipts(r)}finally{db.query=old}}
+  ];
+  for(const attempt of denied) {
+    await assert.rejects(attempt(),e=>e.getStatus?.()===403);
+  }
+  await assert.rejects(app.listInvoicesByMonth(req(),'2026-13'),e=>e.getStatus?.()===400);
+  {
+    const unauthorized={};
+    publishVerifiedFinanceIdentity(unauthorized,{...identity,actorRole:'CAREGIVER'});
+    await assert.rejects(app.getMonthlyOperatingResult(unauthorized,'2026-10'),e=>e.getStatus?.()===403);
+  }
+  {
+    const revoked=req('ADMIN');
+    const previous=db.query;
+    db.query=async()=>({rows:[]});
+    try {await assert.rejects(app.getMonthlyOperatingResult(revoked,'2026-10'),e=>e.getStatus?.()===403);}
+    finally {db.query=previous;}
+  }
+  await assert.rejects(app.getMonthlyOperatingResult(req('ADMIN'),'2026-13'),e=>e.getStatus?.()===400);
+  await assert.rejects(app.getInvoiceBalance(req(),'bad/id'),e=>e.getStatus?.()===400);
+  assert.ok(queries.length>=8);
+  console.log('FINANCE_V2974_ISOLATED_CONTROLLER_TEST_PASS');
+  console.log('ROUTES_GET=7 AUTH_ALLOWED=3 AUTH_DENIED=6 INPUT_REJECTED=3');
+  console.log('DATA_SOURCE=EPHEMERAL_MEMORY_SQL_STUB; REAL_DB=NO; HTTP_JWT_ISOLATED_SMOKE=SEPARATE_CI');
+}
+main().catch(e=>{console.error(e.message);process.exitCode=1;});
