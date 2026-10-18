@@ -39,7 +39,7 @@ export default function KitchenOperationsPage() {
 
   // Quick 1-Touch Action State for Kitchen & Nutrition Staff
   const [kitchenQuickAction, setKitchenQuickAction] = useState('KITCHEN_CLEANING_DISINFECTION');
-  const [kitchenQuickNote, setKitchenQuickNote] = useState('🧼 Sàn bếp & dụng cụ đã được khử khuẩn, đĩa khay sắp xếp gọn gàng đúng vị trí');
+  const [kitchenQuickNote, setKitchenQuickNote] = useState('');
   const [kitchenQuickSuccess, setKitchenQuickSuccess] = useState('');
   const [isSubmittingQuick, setIsSubmittingQuick] = useState(false);
 
@@ -281,8 +281,8 @@ export default function KitchenOperationsPage() {
   }, [vendors, batches]);
 
   // Form State for New Receiving Batch
-  const [newBatchVendorId, setNewBatchVendorId] = useState(vendors[0]?.id || 'VND-001');
-  const [newBatchVendorName, setNewBatchVendorName] = useState(vendors[0]?.vendorName || 'Công ty Thực Phẩm Sạch Vissan Care');
+  const [newBatchVendorId, setNewBatchVendorId] = useState('');
+  const [newBatchVendorName, setNewBatchVendorName] = useState('');
   const [isCustomVendor, setIsCustomVendor] = useState(false);
   const [newBatchNoteNumber, setNewBatchNoteNumber] = useState('');
   const [newBatchPlate, setNewBatchPlate] = useState('');
@@ -291,27 +291,7 @@ export default function KitchenOperationsPage() {
   const [newBatchNotes, setNewBatchNotes] = useState('');
   const [newBatchOverallStatus, setNewBatchOverallStatus] = useState<InspectionStatus>('ACCEPTED');
 
-  const [newBatchItems, setNewBatchItems] = useState<FoodReceivingItem[]>([
-    {
-      itemId: 'ITEM-NEW-1',
-      itemName: 'Thịt heo nạc dăm VietGAP',
-      category: 'MEAT_SEAFOOD',
-      orderedQuantity: 15.0,
-      actualQuantity: 15.0,
-      unit: 'kg',
-      variance: 0.0,
-      variancePercent: 0.0,
-      unitPrice: 135000,
-      totalPrice: 2025000,
-      deliveryTemp: -19.0,
-      expiryDate: '2026-09-12',
-      sensoryQuality: 'FRESH_PRISTINE',
-      packagingCondition: 'INTACT_SEALED',
-      status: 'ACCEPTED',
-      storageZone: 'FREEZER',
-      note: 'Bao bì nguyên vẹn, màu tươi hồng',
-    },
-  ]);
+  const [newBatchItems, setNewBatchItems] = useState<FoodReceivingItem[]>([]);
 
   const handleAddItemToNewBatch = () => {
     setNewBatchItems([
@@ -320,19 +300,20 @@ export default function KitchenOperationsPage() {
         itemId: `ITEM-NEW-${newBatchItems.length + 1}`,
         itemName: '',
         category: 'VEGETABLES_FRUITS',
-        orderedQuantity: 10,
-        actualQuantity: 10,
+        orderedQuantity: 0,
+        actualQuantity: 0,
         unit: 'kg',
         variance: 0,
         variancePercent: 0,
-        unitPrice: 30000,
-        totalPrice: 300000,
-        deliveryTemp: 4.0,
-        expiryDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+        unitPrice: 0,
+        totalPrice: 0,
+        deliveryTemp: 0,
+        expiryDate: '',
         sensoryQuality: 'FRESH_PRISTINE',
         packagingCondition: 'INTACT_SEALED',
         status: 'ACCEPTED',
         storageZone: 'CHILLER',
+        note: '',
       },
     ]);
   };
@@ -366,17 +347,57 @@ export default function KitchenOperationsPage() {
     mutationFn: async () => {
       if (!actor) throw new Error('Yêu cầu đăng nhập');
       const matchingVendor = vendors.find((v) => v.id === newBatchVendorId || v.vendorName.toLowerCase() === newBatchVendorName.trim().toLowerCase());
-      const finalVendorId = isCustomVendor ? `VND-CUSTOM-${Date.now().toString().slice(-6)}` : (matchingVendor?.id || 'VND-001');
-      const finalVendorName = (isCustomVendor ? newBatchVendorName.trim() : (matchingVendor?.vendorName || newBatchVendorName.trim())) || 'Nhà cung cấp mới';
+      const finalVendorId = isCustomVendor ? `VND-CUSTOM-${Date.now().toString().slice(-6)}` : (matchingVendor?.id || '');
+      const finalVendorName = isCustomVendor ? newBatchVendorName.trim() : (matchingVendor?.vendorName || newBatchVendorName.trim());
+
+      if (!finalVendorId || !finalVendorName) {
+        throw new Error('Vui lòng chọn hoặc nhập nhà cung cấp thực tế');
+      }
+
+      if (!newBatchNoteNumber.trim()) {
+        throw new Error('Vui lòng nhập số phiếu giao / hóa đơn thực tế');
+      }
+
+      if (!newBatchPlate.trim()) {
+        throw new Error('Vui lòng nhập biển số xe giao hàng thực tế');
+      }
+
+      if (!newBatchDeliverer.trim()) {
+        throw new Error('Vui lòng nhập họ tên người giao hàng thực tế');
+      }
+
+      if (!newBatchDelivererPhone.trim()) {
+        throw new Error('Vui lòng nhập số điện thoại người giao hàng thực tế');
+      }
+
+      if (newBatchItems.length === 0) {
+        throw new Error('Vui lòng thêm ít nhất một mặt hàng thực tế');
+      }
+
+      if (
+        newBatchItems.some(
+          (item) =>
+            !item.itemName.trim() ||
+            !item.unit.trim() ||
+            Number(item.orderedQuantity) <= 0 ||
+            Number(item.actualQuantity) <= 0 ||
+            Number(item.unitPrice) < 0 ||
+            !item.expiryDate
+        )
+      ) {
+        throw new Error(
+          'Vui lòng nhập đầy đủ dữ liệu thực tế cho từng mặt hàng'
+        );
+      }
 
       return createFoodReceivingBatch(actor, {
         vendorId: finalVendorId,
         vendorName: finalVendorName,
         deliveryNoteNumber: newBatchNoteNumber || `PGH-${Date.now().toString().slice(-6)}`,
-        vehiclePlate: newBatchPlate || '29C-123.45',
-        delivererName: newBatchDeliverer || 'Nguyễn Văn Giao',
-        delivererPhone: newBatchDelivererPhone || '0901234567',
-        receiverId: actor.actorId || 'STAFF-NUT-007',
+        vehiclePlate: newBatchPlate.trim(),
+        delivererName: newBatchDeliverer.trim(),
+        delivererPhone: newBatchDelivererPhone.trim(),
+        receiverId: actor.actorId,
         receiverName: `${actor.displayName || 'Nhân viên'} (${actor.actorRole === 'NUTRITIONIST' ? 'Dinh dưỡng' : actor.actorRole})`,
         totalItems: newBatchItems.length,
         overallStatus: newBatchOverallStatus,
@@ -392,11 +413,14 @@ export default function KitchenOperationsPage() {
       setShowNewBatchModal(false);
       // Reset form
       setIsCustomVendor(false);
-      setNewBatchVendorName(vendors[0]?.vendorName || '');
+      setNewBatchVendorId('');
+      setNewBatchVendorName('');
       setNewBatchNoteNumber('');
       setNewBatchPlate('');
       setNewBatchDeliverer('');
+      setNewBatchDelivererPhone('');
       setNewBatchNotes('');
+      setNewBatchItems([]);
     },
   });
 
@@ -411,17 +435,14 @@ export default function KitchenOperationsPage() {
 
   // State for Food Dispatch
   const [dispatchMealType, setDispatchMealType] = useState<WeeklyMealType>('LUNCH');
-  const [dispatchMenuName, setDispatchMenuName] = useState('Thịt bò phi lê Úc hầm củ quả mềm nhừ & Canh cải bó xôi thịt bằm');
-  const [dispatchResidentCount, setDispatchResidentCount] = useState(78);
-  const [dispatchItems, setDispatchItems] = useState<Array<{ itemId: string; itemName: string; quantity: number; unit: string }>>([
-    { itemId: 'INV-F02', itemName: 'Thịt bò phi lê Úc', quantity: 8.0, unit: 'kg' },
-    { itemId: 'INV-F05', itemName: 'Bí đỏ hồ lô hạt sen', quantity: 10.0, unit: 'kg' },
-  ]);
+  const [dispatchMenuName, setDispatchMenuName] = useState('');
+  const [dispatchResidentCount, setDispatchResidentCount] = useState(0);
+  const [dispatchItems, setDispatchItems] = useState<Array<{ itemId: string; itemName: string; quantity: number; unit: string }>>([]);
 
   const handleOpenDispatchModal = () => {
     const defaultType: WeeklyMealType = 'LUNCH';
     setDispatchMealType(defaultType);
-    setDispatchMenuName(getSuggestedMenuName(defaultType) || 'Thịt bò phi lê Úc hầm củ quả mềm nhừ & Canh cải bó xôi thịt bằm');
+    setDispatchMenuName('');
     setShowDispatchModal(true);
   };
 
@@ -442,6 +463,18 @@ export default function KitchenOperationsPage() {
         AFTERNOON_SNACK: 'Bữa Xế chiều',
         DINNER: 'Bữa Tối',
       };
+      if (!dispatchMenuName.trim()) {
+        throw new Error('Vui lòng nhập hoặc chọn thực đơn thực tế');
+      }
+
+      if (dispatchResidentCount <= 0) {
+        throw new Error('Vui lòng nhập số suất phục vụ thực tế');
+      }
+
+      if (dispatchItems.length === 0) {
+        throw new Error('Vui lòng chọn nguyên liệu xuất kho thực tế');
+      }
+
       return dispatchFoodForCooking(actor, {
         dispatchDate: new Date().toISOString().split('T')[0],
         mealType: dispatchMealType,
@@ -451,7 +484,7 @@ export default function KitchenOperationsPage() {
         dispatchedBy: `${actor.displayName || 'Nhân viên'} (Dinh dưỡng)`,
         items: dispatchItems,
         status: 'COOKED',
-        notes: 'Đã cân đúng định mức khẩu phần dinh dưỡng dưỡng lão',
+        notes: '',
       });
     },
     onSuccess: () => {
@@ -465,11 +498,11 @@ export default function KitchenOperationsPage() {
   // State for Food Sample Creation
   const [sampleDishName, setSampleDishName] = useState('');
   const [sampleMealType, setSampleMealType] = useState<'BREAKFAST' | 'LUNCH' | 'AFTERNOON_SNACK' | 'DINNER'>('LUNCH');
-  const [sampleWeight, setSampleWeight] = useState('150g');
-  const [sampleContainer, setSampleContainer] = useState('Hộp thủy tinh Borosilicate niêm phong');
-  const [sampleLocation, setSampleLocation] = useState('Tủ lưu mẫu số 01 - Ngăn 2');
-  const [sampleTemp, setSampleTemp] = useState('+3.8°C');
-  const [sampleSensory, setSampleSensory] = useState('Màu sắc tươi, mùi vị đặc trưng thơm ngon, nhiệt độ bảo quản chuẩn y khoa');
+  const [sampleWeight, setSampleWeight] = useState('');
+  const [sampleContainer, setSampleContainer] = useState('');
+  const [sampleLocation, setSampleLocation] = useState('');
+  const [sampleTemp, setSampleTemp] = useState('');
+  const [sampleSensory, setSampleSensory] = useState('');
 
   const createSampleMutation = useMutation({
     mutationFn: async () => {
@@ -480,6 +513,26 @@ export default function KitchenOperationsPage() {
         AFTERNOON_SNACK: 'Bữa Xế chiều',
         DINNER: 'Bữa Tối',
       };
+      if (!sampleDishName.trim()) {
+        throw new Error('Vui lòng nhập tên món ăn lấy mẫu thực tế');
+      }
+
+      if (!sampleWeight.trim()) {
+        throw new Error('Vui lòng nhập dung lượng mẫu lưu thực tế');
+      }
+
+      if (!sampleContainer.trim()) {
+        throw new Error('Vui lòng nhập dụng cụ lưu mẫu thực tế');
+      }
+
+      if (!sampleLocation.trim()) {
+        throw new Error('Vui lòng nhập vị trí lưu mẫu thực tế');
+      }
+
+      if (!sampleTemp.trim()) {
+        throw new Error('Vui lòng nhập nhiệt độ lưu mẫu thực tế');
+      }
+
       return createFoodSampleRecord(actor, {
         sampleDate: new Date().toISOString().split('T')[0],
         mealType: sampleMealType,
@@ -489,7 +542,7 @@ export default function KitchenOperationsPage() {
         containerType: sampleContainer,
         storageLocation: sampleLocation,
         storageTemp: sampleTemp,
-        samplerId: actor.actorId || 'STAFF-NUT-007',
+        samplerId: actor.actorId,
         samplerName: `${actor.displayName || 'Nhân viên dinh dưỡng'} (Nhân viên dinh dưỡng)`,
         status: 'ACTIVE_STORAGE',
         sensoryNote: sampleSensory,
@@ -500,6 +553,11 @@ export default function KitchenOperationsPage() {
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
       setShowNewSampleModal(false);
       setSampleDishName('');
+      setSampleWeight('');
+      setSampleContainer('');
+      setSampleLocation('');
+      setSampleTemp('');
+      setSampleSensory('');
     },
   });
 
@@ -577,7 +635,26 @@ export default function KitchenOperationsPage() {
       )}
 
       {/* TAB 0: THỰC ĐƠN TUẦN & THỰC ĐƠN HÔM NAY */}
-      {activeTab === 'MENU' && selectedDaySchedule && (
+      {activeTab === 'MENU' && selectedDaySchedule && selectedDaySchedule.meals.length === 0 && (
+        <div
+          className="card"
+          style={{
+            background: '#ffffff',
+            borderRadius: '0.75rem',
+            padding: '1.25rem',
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          <div style={{ fontWeight: 800, color: '#334155', marginBottom: '0.4rem' }}>
+            Chưa có thực đơn thực tế cho {selectedDaySchedule.dayName}
+          </div>
+          <div style={{ fontSize: '0.86rem', color: '#64748b' }}>
+            Hệ thống không tự tạo thực đơn mẫu. Thực đơn chỉ hiển thị sau khi người có thẩm quyền nhập và lưu dữ liệu thực tế.
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'MENU' && selectedDaySchedule && selectedDaySchedule.meals.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* Header Banner Card */}
           <div className="card" style={{ background: '#ffffff', borderRadius: '0.75rem', padding: '1.25rem', borderLeft: '5px solid #15803d', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -1507,7 +1584,7 @@ export default function KitchenOperationsPage() {
                       </td>
                       <td style={{ padding: '0.75rem 1rem' }}>
                         <div style={{ fontSize: '0.78rem', color: '#475569' }}>
-                          {d.notes || 'Đã cân đúng định mức khẩu phần dinh dưỡng dưỡng lão'}
+                          {d.notes || '—'}
                         </div>
                       </td>
                       <td style={{ padding: '0.75rem 1rem' }}>
@@ -1622,7 +1699,7 @@ export default function KitchenOperationsPage() {
                       title="Quay lại chọn từ danh sách"
                       onClick={() => {
                         setIsCustomVendor(false);
-                        setNewBatchVendorId(vendors[0]?.id || 'VND-001');
+                        setNewBatchVendorId('');
                         setNewBatchVendorName(vendors[0]?.vendorName || '');
                       }}
                       style={{
@@ -2022,7 +2099,7 @@ export default function KitchenOperationsPage() {
 
             {/* Note & Signature Box */}
             <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '0.5rem', marginBottom: '1.25rem', fontSize: '0.84rem' }}>
-              <b>Ghi chú kiểm tra:</b> {showDetailBatchModal.notes || 'Thực phẩm đạt chuẩn chất lượng cảm quan và nhiệt độ bảo quản lạnh.'}
+              <b>Ghi chú kiểm tra:</b> {showDetailBatchModal.notes || '—'}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem', textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem' }}>

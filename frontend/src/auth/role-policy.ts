@@ -3,22 +3,22 @@ import type {
 } from '../types/actor';
 
 export const ROLE_LABELS: Record<HumanActorRole, string> = {
-  ADMIN: 'Quản trị viên hệ thống',
+  ADMIN: 'Quản trị hệ thống',
   SUPERVISOR: 'Ban Giám đốc',
   CARE_MANAGER: 'Quản lý chung',
-  MEDICAL_HEAD: 'Phụ trách y tế',
-  PSYCHOLOGIST: 'Nhân viên tâm lý và công tác xã hội',
-  SOCIAL_WORKER: 'Nhân viên tâm lý và công tác xã hội',
-  NURSE: 'Nhân viên y tế',
-  CAREGIVER: 'Nhân viên chăm sóc',
-  NUTRITIONIST: 'Nhân viên dinh dưỡng',
-  HOUSEKEEPING: 'Nhân viên tạp vụ',
-  REHABILITATION_SPECIALIST: 'Nhân viên phục hồi chức năng',
-  COMMUNICATIONS: 'Nhân viên truyền thông',
-  SECURITY: 'Nhân viên bảo vệ',
-  ACCOUNTANT: 'Nhân viên kế toán',
-  RECEPTIONIST: 'Nhân viên lễ tân',
-  GUARDIAN: 'Người bảo hộ cư dân',
+  MEDICAL_HEAD: 'Phụ trách Y tế',
+  NURSE: 'Nhân viên Y tế',
+  CAREGIVER: 'Nhân viên Chăm sóc',
+  NUTRITIONIST: 'Nhân viên Dinh dưỡng',
+  ACCOUNTANT: 'Kế toán',
+  RECEPTIONIST: 'Nhân viên Lễ tân',
+  PSYCHOLOGIST: 'Nhân viên Tâm lý – CTXH',
+  SOCIAL_WORKER: 'Nhân viên Tâm lý – CTXH',
+  REHABILITATION_SPECIALIST: 'Nhân viên Phục hồi chức năng',
+  COMMUNICATIONS: 'Nhân viên Truyền thông / CSKH',
+  HOUSEKEEPING: 'Nhân viên Tạp vụ',
+  SECURITY: 'Bảo vệ',
+  GUARDIAN: 'Thân nhân / Giám hộ',
 };
 
 export type AppRouteKey =
@@ -178,13 +178,10 @@ export const ROLE_CAPABILITIES: Record<HumanActorRole, RoleCapability> = {
       'operations',
       'admissions',
       'health-reports',
-      'staff-access',
       'family-portal',
       'medication-inventory',
       'kitchen-operations',
-      'billing-invoicing',
       'analytics-intelligence',
-      'audit-trail',
       'service-contracts',
       'system-status',
     ],
@@ -203,10 +200,10 @@ export const ROLE_CAPABILITIES: Record<HumanActorRole, RoleCapability> = {
     canAdministerMedication: true,
     canManageInventory: true,
     canManageKitchenOperations: true,
-    canManageBilling: true,
+    canManageBilling: false,
     canConfigurePricing: true,
     canAccessAnalytics: true,
-    canViewAuditLog: true,
+    canViewAuditLog: false,
     canViewDirectorAuditLog: false,
     canViewSensitiveFinancials: true, // QUẢN LÝ: Quyền xem đơn giá & tổng giá trị nhập thực phẩm, kinh phí
     canEvaluatePsychology: false,
@@ -265,7 +262,6 @@ export const ROLE_CAPABILITIES: Record<HumanActorRole, RoleCapability> = {
       'residents',
       'resident-leave',
       'admissions',
-      'health-reports',
       'workforce',
       'operations',
     ],
@@ -303,7 +299,6 @@ export const ROLE_CAPABILITIES: Record<HumanActorRole, RoleCapability> = {
       'residents',
       'resident-leave',
       'admissions',
-      'health-reports',
       'workforce',
       'operations',
     ],
@@ -706,64 +701,20 @@ export function hasCapability(
   return Boolean(ROLE_CAPABILITIES[role]?.[capability]);
 }
 
-export const CAREGIVER_ASSIGNMENTS: Record<string, string[]> = {
-  // Hoàng Văn Tuấn
-  'cg-tuan-002': ['res-demo-004', 'res-demo-005', 'res-demo-007'],
-  'STAFF-CG-002': ['res-demo-004', 'res-demo-005', 'res-demo-007'],
-  'Hoàng Văn Tuấn': ['res-demo-004', 'res-demo-005', 'res-demo-007'],
+export const CAREGIVER_ASSIGNMENTS: Record<string, string[]> = {};
 
-  // Trần Thị Mai
-  'cg-mai-001': ['res-demo-001', 'res-demo-002', 'res-demo-003'],
-  'STAFF-CG-001': ['res-demo-001', 'res-demo-002', 'res-demo-003'],
-  'Trần Thị Mai': ['res-demo-001', 'res-demo-002', 'res-demo-003'],
-
-  // Đặng Thị Hoa
-  'cg-hoa-003': ['res-demo-008', 'res-demo-006', 'resident-vw9ec-20260828-153826'],
-  'STAFF-CG-003': ['res-demo-008', 'res-demo-006', 'resident-vw9ec-20260828-153826'],
-  'Đặng Thị Hoa': ['res-demo-008', 'res-demo-006', 'resident-vw9ec-20260828-153826'],
-};
-
-export function getAssignedResidentIdsForActor(actorId?: string, displayName?: string): string[] {
-  if (actorId && CAREGIVER_ASSIGNMENTS[actorId]) return CAREGIVER_ASSIGNMENTS[actorId];
-  if (displayName && CAREGIVER_ASSIGNMENTS[displayName]) return CAREGIVER_ASSIGNMENTS[displayName];
-  return ['res-demo-004', 'res-demo-005', 'res-demo-007'];
+export function getAssignedResidentIdsForActor(
+  _actorId?: string,
+  _displayName?: string,
+): string[] {
+  return [];
 }
 
-export const GUARDIAN_ASSIGNMENTS: Record<string, string[]> = {
-  // Lê Gia Bảo - Con trai cụ Nguyễn Văn An (res-demo-001)
-  'TA-GUA-01': ['res-demo-001'],
-  'guardian-bao-001': ['res-demo-001'],
-  'GD-001': ['res-demo-001'],
-  'Lê Gia Bảo': ['res-demo-001'],
-  'STAFF-GD-001': ['res-demo-001'],
-  'GUARDIAN-001': ['res-demo-001'],
+export const GUARDIAN_ASSIGNMENTS: Record<string, string[]> = {};
 
-  // Trần Anh Đức - Con trai cụ Trần Thị Bình (res-demo-002)
-  'TA-GUA-02': ['res-demo-002'],
-  'guardian-duc-002': ['res-demo-002'],
-  'GD-002': ['res-demo-002'],
-  'Trần Anh Đức': ['res-demo-002'],
-  'STAFF-GD-002': ['res-demo-002'],
-  'GUARDIAN-002': ['res-demo-002'],
-
-  // Bùi Thị Mai - Thân nhân cụ Phạm Văn Cường (res-demo-003)
-  'TA-GUA-03': ['res-demo-003'],
-  'guardian-mai-003': ['res-demo-003'],
-};
-
-export function getAssignedResidentIdsForGuardian(actorId?: string, displayName?: string): string[] {
-  if (actorId && GUARDIAN_ASSIGNMENTS[actorId]) return GUARDIAN_ASSIGNMENTS[actorId];
-  if (displayName && GUARDIAN_ASSIGNMENTS[displayName]) return GUARDIAN_ASSIGNMENTS[displayName];
-
-  // Dynamic fallback for any TA-GUA-xx or GUARDIAN account
-  if (actorId) {
-    const match = actorId.match(/(?:TA-GUA-|GUA-|GD-)(\d+)/i);
-    if (match) {
-      const num = parseInt(match[1], 10);
-      const demoResId = `res-demo-00${((num - 1) % 3) + 1}`;
-      return [demoResId];
-    }
-  }
-
-  return ['res-demo-001'];
+export function getAssignedResidentIdsForGuardian(
+  _actorId?: string,
+  _displayName?: string,
+): string[] {
+  return [];
 }

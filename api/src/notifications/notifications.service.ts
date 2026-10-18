@@ -26,6 +26,11 @@ export class NotificationsService implements OnModuleInit {
   constructor(private readonly db: DatabaseService) {}
 
   async onModuleInit() {
+    if (process.env.NODE_ENV === 'production') {
+      await this.db.query('SELECT 1 FROM notifications LIMIT 0');
+      await this.db.query('SELECT 1 FROM push_subscriptions LIMIT 0');
+      return;
+    }
     try {
       await this.db.query(`
         CREATE TABLE IF NOT EXISTS notifications (

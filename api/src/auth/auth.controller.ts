@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  ForbiddenException,
   Headers,
   HttpCode,
   Param,
@@ -21,12 +22,15 @@ export class AuthController {
   ) {}
 
   @Get('active-staff')
-  getActiveStaff() {
+  getActiveStaff(@Headers('x-actor-role') role?: string) {
+    if (role !== 'SUPERVISOR') throw new ForbiddenException('Supervisor authority is required');
     return this.authService.listActiveStaff();
   }
 
   @Get('resolve-actor/:actorId')
-  resolveActor(@Param('actorId') actorId: string) {
+  resolveActor(@Param('actorId') actorId: string, @Headers('x-actor-id') currentId?: string,
+    @Headers('x-actor-role') role?: string) {
+    if (role !== 'SUPERVISOR' && currentId !== actorId) throw new ForbiddenException('Actor access denied');
     return this.authService.resolveActor(actorId);
   }
 

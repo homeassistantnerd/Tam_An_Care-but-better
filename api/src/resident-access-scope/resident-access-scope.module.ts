@@ -1,3 +1,6 @@
+import { AssignedResidentController } from './assigned-resident.controller';
+import { GuardianResidentService } from './guardian-resident.service';
+import { GuardianResidentController } from './guardian-resident.controller';
 import {
   Module,
 } from '@nestjs/common';
@@ -19,7 +22,9 @@ import {
     DatabaseModule,
     StaffActorModule,
   ],
+  controllers: [GuardianResidentController, AssignedResidentController],
   providers: [
+    GuardianResidentService,
     ResidentAccessScopeService,
   ],
   exports: [

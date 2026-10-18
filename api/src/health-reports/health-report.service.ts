@@ -1,3 +1,4 @@
+import { ResidentAccessScopeService, ResidentAccessHumanRole } from '../resident-access-scope/resident-access-scope.service';
 import { PDFDocument, rgb } from 'pdf-lib';
 import * as fontkit from '@pdf-lib/fontkit';
 import { readFile } from 'node:fs/promises';
@@ -20,6 +21,7 @@ import {
 } from '../database/database.service';
 
 export type HealthReportActorRole =
+  | 'ADMIN'
   | 'CAREGIVER'
   | 'NURSE'
   | 'CARE_MANAGER'
@@ -92,6 +94,10 @@ interface CreateInput {
   periodStart: string;
   periodEnd: string;
   summary?: string;
+}
+
+interface UpdateInput {
+  summary: string;
 }
 
 interface DeliveryInput {
@@ -195,6 +201,7 @@ export class HealthReportService {
 
   constructor(
     private readonly db: DatabaseService,
+    private readonly scope: ResidentAccessScopeService,
   ) {}
 
   private stableSerialize(
@@ -257,115 +264,85 @@ export class HealthReportService {
       );
     }
 
-    // Family guardians are authorized for their resident views
     if (actor.actorRole === 'GUARDIAN' || actor.actorRole === 'FAMILY') {
+      throw new ForbiddenException('Use the scoped Guardian portal');
+    }
+    const result = await this.db.query<ActorRow>(`
+      SELECT actor_id, primary_operational_role, status FROM staff_actors
+      WHERE actor_id=$1 AND status='ACTIVE' AND primary_operational_role=$2 LIMIT 1
+    `, [actor.actorId, actor.actorRole]);
+    if (result.rows.length !== 1) throw new UnauthorizedException('Canonical active actor is required');
+  }
+
+  private async assertGuardianResidentAccess(
+    actor: HealthReportActor,
+    residentIdInput: string,
+  ): Promise<void> {
+    if (actor.actorRole !== 'GUARDIAN') {
       return;
     }
 
-    try {
-      const result =
-        await this.db.query<ActorRow>(
-          `
-            SELECT
-              actor_id,
-              primary_operational_role,
-              status
-            FROM staff_actors
-            WHERE actor_id=$1
-            LIMIT 1
-          `,
-          [actor.actorId],
-        );
+    const actorId =
+      String(actor.actorId ?? '').trim();
 
-      const canonical = result.rows[0];
+    const residentId =
+      String(residentIdInput ?? '').trim();
 
-      if (canonical) {
-        if (canonical.status !== 'ACTIVE') {
-          throw new UnauthorizedException(
-            'Canonical active human actor is required',
-          );
-        }
+    if (!actorId || !residentId) {
+      throw new ForbiddenException(
+        'Guardian resident access is not authorized.',
+      );
+    }
 
-        if (
-          canonical.primary_operational_role !==
-          actor.actorRole
-        ) {
-          throw new ForbiddenException(
-            'Human actor role does not match canonical role',
-          );
-        }
-      }
-    } catch (e: any) {
-      if (e instanceof ForbiddenException || e instanceof UnauthorizedException) {
-        throw e;
-      }
-      // Log connection error and proceed in local dev
+    const result =
+      await this.db.query<{
+        resident_id: string;
+      }>(
+        `
+          SELECT
+            raa.resident_id
+          FROM resident_access_assignments raa
+          JOIN staff_actors sa
+            ON sa.actor_id = raa.actor_id
+          WHERE
+            raa.resident_id=$1
+            AND raa.actor_id=$2
+            AND raa.actor_role='GUARDIAN'
+            AND raa.access_scope='FAMILY_PORTAL'
+            AND raa.status='ACTIVE'
+            AND raa.effective_from <= NOW()
+            AND (
+              raa.effective_to IS NULL
+              OR raa.effective_to > NOW()
+            )
+            AND sa.status='ACTIVE'
+            AND sa.primary_operational_role='GUARDIAN'
+          LIMIT 1
+        `,
+        [
+          residentId,
+          actorId,
+        ],
+      );
+
+    if (!result.rows[0]) {
+      throw new ForbiddenException(
+        'Guardian is not assigned to this resident.',
+      );
     }
   }
 
-  private async getReport(
-    healthReportId: string,
-  ): Promise<HealthReportRow> {
-    try {
-      const result =
-        await this.db.query<HealthReportRow>(
-          `
-            SELECT *
-            FROM health_reports
-            WHERE health_report_id=$1
-            LIMIT 1
-          `,
-          [healthReportId],
-        );
-
-      if (result.rows[0]) {
-        return result.rows[0];
-      }
-    } catch {
-      // Fallback
+  private async authorizeResident(actor: HealthReportActor, residentId: string) {
+    if (!await this.scope.canAccessResident(actor.actorId, actor.actorRole as ResidentAccessHumanRole, residentId)) {
+      throw new NotFoundException('Health report not found');
     }
+  }
 
-    return {
-      health_report_id: healthReportId,
-      resident_id: 'resident-001',
-      report_type: 'MONTHLY',
-      period_start: new Date('2026-08-02'),
-      period_end: new Date('2026-09-02'),
-      status: 'APPROVED',
-      report_version: 1,
-      summary: JSON.stringify({
-        residentName: 'Ông Nguyễn Văn An',
-        residentCode: 'NCT-001',
-        dateOfBirth: '01/01/1944',
-        gender: 'Nam',
-        specificEvaluation: 'Huyết áp (Khoảng Min - Max): 118/70 – 146/94 mmHg (Cao - cần theo dõi & kiểm soát).\nNhịp tim/Mạch (Khoảng Min - Max): 74 – 94 lần/phút (Ổn định bình thường).\nSpO2 (Khoảng Min - Max): 95 – 98%.\nThân nhiệt (Khoảng Min - Max): 36.2 – 36.8°C.\nĐường huyết mao mạch (Khoảng Min - Max): 6.2 – 8.5 mmol/L.\nSa sút trí tuệ: Cụ nhận diện được người thân, cần nhân viên bao quát khi tập thể dục.',
-        additionalNotesAndCareInstructions: '- Duy trì chế độ chăm sóc, dinh dưỡng giảm tinh bột tăng đạm và cấp phát thuốc hàng ngày theo đơn.\n- Nhân viên chăm sóc thay quần áo hàng ngày và hỗ trợ tắm rửa theo lịch.',
-        assessorName: 'Nguyễn Thị Phương Thúy (Nhân viên y tế)',
-        pulse: '74 – 94',
-        pulseEvaluation: 'NORMAL',
-        bloodPressure: '118/70 – 146/94',
-        bpEvaluation: 'NORMAL',
-        temperature: '36.2 – 36.8',
-        tempEvaluation: 'NORMAL',
-        spo2: '95 – 98',
-        spo2Evaluation: 'NORMAL',
-        careLevelProposal: 'LEVEL_2',
-      }),
-      created_by: 'staff-nurse-001',
-      created_by_role: 'NURSE',
-      generated_at: new Date(),
-      generated_by: 'staff-nurse-001',
-      generated_by_role: 'NURSE',
-      reviewed_at: new Date(),
-      reviewed_by: 'staff-mgr-002',
-      reviewed_by_role: 'CARE_MANAGER',
-      approved_at: new Date(),
-      approved_by: 'staff-dir-001',
-      approved_by_role: 'SUPERVISOR',
-      supersedes_report_id: null,
-      created_at: new Date('2026-09-01'),
-      updated_at: new Date('2026-09-02'),
-    };
+  private async getReport(healthReportId: string): Promise<HealthReportRow> {
+    const result = await this.db.query<HealthReportRow>(
+      'SELECT * FROM health_reports WHERE health_report_id=$1 LIMIT 1', [healthReportId]);
+    if (!result.rows[0]) throw new NotFoundException('Health report not found');
+    return result.rows[0];
   }
 
   async list(
@@ -388,40 +365,14 @@ export class HealthReportService {
       ],
     );
 
-    try {
-      const result =
-        residentId
-          ? await this.db.query<HealthReportRow>(
-              `
-                SELECT *
-                FROM health_reports
-                WHERE resident_id=$1
-                ORDER BY
-                  period_end DESC,
-                  created_at DESC
-              `,
-              [residentId],
-            )
-          : await this.db.query<HealthReportRow>(
-              `
-                SELECT *
-                FROM health_reports
-                ORDER BY
-                  period_end DESC,
-                  created_at DESC
-              `,
-            );
-
-      if (result.rows.length > 0) {
-        return result.rows;
-      }
-    } catch {
-      // Fallback
-    }
-
-    return [
-      await this.getReport('health-report-3416fcc0-08ef-43d6-8378-c4edd18c3f51'),
-    ];
+    const predicate = this.scope.sqlPredicate('r', actor.actorId, actor.actorRole as ResidentAccessHumanRole);
+    const params = residentId ? [...predicate.params, residentId] : predicate.params;
+    const result = await this.db.query<HealthReportRow>(`
+      SELECT h.* FROM health_reports h JOIN residents r ON r.resident_id=h.resident_id
+      WHERE (${predicate.sql}) ${residentId ? `AND h.resident_id=$${predicate.nextParameter}` : ''}
+      ORDER BY h.period_end DESC, h.created_at DESC
+    `, params);
+    return result.rows;
   }
 
   async detail(
@@ -440,6 +391,7 @@ export class HealthReportService {
 
     const report =
       await this.getReport(healthReportId);
+    await this.authorizeResident(actor, report.resident_id);
 
     const snapshots =
       await this.db.query(
@@ -489,7 +441,10 @@ export class HealthReportService {
     await this.authorize(
       actor,
       [
+        'ADMIN',
         'NURSE',
+        'CARE_MANAGER',
+        'MEDICAL_HEAD',
       ],
     );
 
@@ -511,6 +466,7 @@ export class HealthReportService {
       );
     }
 
+    await this.authorizeResident(actor, input.residentId);
     const resident =
       await this.db.query(
         `
@@ -594,6 +550,107 @@ export class HealthReportService {
         );
 
         return inserted.rows[0];
+      },
+    );
+  }
+
+
+  async update(
+    actor: HealthReportActor,
+    healthReportId: string,
+    input: UpdateInput,
+  ): Promise<HealthReportRow> {
+    await this.authorize(
+      actor,
+      [
+        'ADMIN',
+        'NURSE',
+        'CARE_MANAGER',
+        'MEDICAL_HEAD',
+        'SUPERVISOR',
+      ],
+    );
+
+    if (typeof input.summary !== 'string') {
+      throw new BadRequestException(
+        'Health report summary is required',
+      );
+    }
+
+    const report =
+      await this.getReport(healthReportId);
+    await this.authorizeResident(actor, report.resident_id);
+
+    if (
+      report.status !== 'DRAFT' &&
+      report.status !== 'REVISION_REQUIRED' &&
+      report.status !== 'UNDER_REVIEW'
+    ) {
+      throw new BadRequestException(
+        'Report cannot be edited in current status',
+      );
+    }
+
+    return this.db.withTransaction(
+      async (client) => {
+        const updated =
+          await client.query<HealthReportRow>(
+            `
+              UPDATE health_reports
+              SET
+                summary=$2,
+                report_version=report_version + 1,
+                updated_at=now()
+              WHERE health_report_id=$1
+              RETURNING *
+            `,
+            [
+              healthReportId,
+              input.summary,
+            ],
+          );
+
+        if (!updated.rows[0]) {
+          throw new NotFoundException(
+            'Health report not found',
+          );
+        }
+
+        await client.query(
+          `
+            INSERT INTO health_report_audit (
+              health_report_id,
+              resident_id,
+              event_type,
+              actor_id,
+              actor_role,
+              previous_state,
+              new_state
+            )
+            VALUES (
+              $1,$2,'REPORT_UPDATED',
+              $3,$4,$5::jsonb,$6::jsonb
+            )
+          `,
+          [
+            healthReportId,
+            report.resident_id,
+            actor.actorId,
+            actor.actorRole,
+            JSON.stringify({
+              status: report.status,
+              reportVersion:
+                report.report_version,
+            }),
+            JSON.stringify({
+              status: report.status,
+              reportVersion:
+                updated.rows[0].report_version,
+            }),
+          ],
+        );
+
+        return updated.rows[0];
       },
     );
   }
@@ -767,14 +824,17 @@ export class HealthReportService {
     await this.authorize(
       actor,
       [
+        'ADMIN',
         'NURSE',
         'CARE_MANAGER',
+        'MEDICAL_HEAD',
         'SUPERVISOR',
       ],
     );
 
     const report =
       await this.getReport(healthReportId);
+    await this.authorizeResident(actor, report.resident_id);
 
     if (
       report.status !== 'DRAFT' &&
@@ -867,7 +927,10 @@ export class HealthReportService {
           );
         }
 
-        if (lockedReport.status !== 'DRAFT') {
+        if (
+          lockedReport.status !== 'DRAFT' &&
+          lockedReport.status !== 'REVISION_REQUIRED'
+        ) {
           throw new BadRequestException(
             'Concurrent health report generation rejected',
           );
@@ -996,14 +1059,17 @@ export class HealthReportService {
     await this.authorize(
       actor,
       [
+        'ADMIN',
         'NURSE',
         'CARE_MANAGER',
+        'MEDICAL_HEAD',
         'SUPERVISOR',
       ],
     );
 
     const report =
       await this.getReport(healthReportId);
+    await this.authorizeResident(actor, report.resident_id);
 
     if (report.status !== 'GENERATED') {
       throw new BadRequestException(
@@ -1079,6 +1145,7 @@ export class HealthReportService {
 
     const report =
       await this.getReport(healthReportId);
+    await this.authorizeResident(actor, report.resident_id);
 
     if (
       report.status !== 'UNDER_REVIEW'
@@ -1184,6 +1251,7 @@ export class HealthReportService {
 
     const report =
       await this.getReport(healthReportId);
+    await this.authorizeResident(actor, report.resident_id);
 
     if (
       report.status !== 'APPROVED' &&
@@ -1404,6 +1472,23 @@ export class HealthReportService {
       await this.getReport(
         healthReportId,
       );
+    await this.authorizeResident(actor, report.resident_id);
+
+    if (actor.actorRole === 'GUARDIAN') {
+      await this.assertGuardianResidentAccess(
+        actor,
+        report.resident_id,
+      );
+
+      if (
+        report.status !== 'APPROVED' &&
+        report.status !== 'DELIVERED'
+      ) {
+        throw new ForbiddenException(
+          'Guardian may access only approved family-facing reports.',
+        );
+      }
+    }
 
     let snapshot:
       | {

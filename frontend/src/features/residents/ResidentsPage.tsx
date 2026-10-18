@@ -118,12 +118,12 @@ export function ResidentsPage() {
   // Modals state: Psychological Assessment (Item 3)
   const [selectedPsyResident, setSelectedPsyResident] = useState<any | null>(null);
   const [psyPeriod, setPsyPeriod] = useState<'MONTHLY' | 'QUARTERLY' | 'AD_HOC'>('MONTHLY');
-  const [psyEmotionalState, setPsyEmotionalState] = useState<'CHEERFUL' | 'STABLE' | 'ANXIOUS' | 'DEPRESSED' | 'AGITATED' | 'APATHETIC'>('STABLE');
+  const [psyEmotionalState, setPsyEmotionalState] = useState<'' | 'CHEERFUL' | 'STABLE' | 'ANXIOUS' | 'DEPRESSED' | 'AGITATED' | 'APATHETIC'>('');
   const [psyEmotionalNotes, setPsyEmotionalNotes] = useState('');
-  const [psySocialComm, setPsySocialComm] = useState<'ACTIVE' | 'NORMAL' | 'WITHDRAWN' | 'RESISTANT' | 'ISOLATED'>('NORMAL');
+  const [psySocialComm, setPsySocialComm] = useState<'' | 'ACTIVE' | 'NORMAL' | 'WITHDRAWN' | 'RESISTANT' | 'ISOLATED'>('');
   const [psySocialNotes, setPsySocialNotes] = useState('');
-  const [psyCognitive, setPsyCognitive] = useState<'ALERT' | 'MILD_FORGETFUL' | 'MODERATE_IMPAIRMENT' | 'DISORIENTED'>('ALERT');
-  const [psySleep, setPsySleep] = useState<'GOOD' | 'INTERRUPTED' | 'INSOMNIA' | 'NIGHT_WANDERING'>('GOOD');
+  const [psyCognitive, setPsyCognitive] = useState<'' | 'ALERT' | 'MILD_FORGETFUL' | 'MODERATE_IMPAIRMENT' | 'DISORIENTED'>('');
+  const [psySleep, setPsySleep] = useState<'' | 'GOOD' | 'INTERRUPTED' | 'INSOMNIA' | 'NIGHT_WANDERING'>('');
   const [psyConclusion, setPsyConclusion] = useState('');
   const [psyRecommendations, setPsyRecommendations] = useState('');
 
@@ -165,13 +165,34 @@ export function ResidentsPage() {
 
   const createPsyMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedPsyResident || !psyConclusion.trim()) {
-        throw new Error('Vui lòng nhập kết luận tổng quát');
+      if (!selectedPsyResident) {
+        throw new Error('Vui lòng chọn người cao tuổi');
+      }
+
+      if (
+        !psyEmotionalState ||
+        !psySocialComm ||
+        !psyCognitive ||
+        !psySleep
+      ) {
+        throw new Error(
+          'Vui lòng hoàn thành các nội dung đánh giá dựa trên quan sát thực tế',
+        );
+      }
+
+      if (!psyConclusion.trim()) {
+        throw new Error('Vui lòng nhập nhận xét chuyên môn cuối kỳ');
+      }
+
+      if (!psyRecommendations.trim()) {
+        throw new Error('Vui lòng nhập kế hoạch/khuyến nghị kỳ tiếp theo');
       }
       return createPsychologicalAssessment(actor!, {
         residentId: selectedPsyResident.residentId,
         residentName: selectedPsyResident.displayName,
-        roomNumber: `Phòng ${selectedPsyResident.room || '101'}`,
+        roomNumber: selectedPsyResident.room
+          ? `Phòng ${selectedPsyResident.room}`
+          : '',
         assessmentDate: new Date().toISOString().slice(0, 10),
         period: psyPeriod,
         periodLabel: psyPeriod === 'MONTHLY' ? 'Đánh giá định kỳ Hàng tháng' : psyPeriod === 'QUARTERLY' ? 'Đánh giá Hàng quý' : 'Đánh giá đột xuất',
@@ -182,11 +203,11 @@ export function ResidentsPage() {
         socialCommunicationLabel: SOCIAL_COMMUNICATION_META[psySocialComm]?.label || psySocialComm,
         socialNotes: psySocialNotes.trim() || undefined,
         cognitiveMemory: psyCognitive,
-        cognitiveMemoryLabel: psyCognitive === 'ALERT' ? 'Tỉnh táo' : 'Suy giảm trí nhớ',
+        cognitiveMemoryLabel: psyCognitive,
         sleepQuality: psySleep,
-        sleepQualityLabel: psySleep === 'GOOD' ? 'Giấc ngủ ngon' : 'Giấc ngủ kém',
+        sleepQualityLabel: psySleep,
         overallConclusion: psyConclusion.trim(),
-        careRecommendations: psyRecommendations.trim() || 'Duy trì chăm sóc hiện tại',
+        careRecommendations: psyRecommendations.trim(),
       });
     },
     onSuccess: () => {
@@ -858,7 +879,7 @@ export function ResidentsPage() {
                     <span className="field-label">Người thân gửi bàn giao</span>
                     <input
                       className="text-input"
-                      placeholder="VD: Lê Gia Bảo (Con trai)"
+                      placeholder="VD: Họ tên thân nhân (Con trai)"
                       value={supDeliveredBy}
                       onChange={(e) => setSupDeliveredBy(e.target.value)}
                     />
@@ -987,7 +1008,7 @@ export function ResidentsPage() {
                   🧠 Lập Phiếu Đánh Giá Tâm Lý & Công Tác Xã Hội
                 </h3>
                 <div style={{ fontSize: '0.8rem', color: '#166534', fontWeight: 600, marginTop: '0.1rem' }}>
-                  Cụ {selectedPsyResident.displayName} (Phòng {selectedPsyResident.room || '101'}) — Tự động xuất Cổng Thân Nhân
+                  Cụ {selectedPsyResident.displayName}{selectedPsyResident.room ? ` (Phòng ${selectedPsyResident.room})` : ''}
                 </div>
               </div>
               <button
@@ -1028,6 +1049,7 @@ export function ResidentsPage() {
                     value={psyEmotionalState}
                     onChange={(e) => setPsyEmotionalState(e.target.value as any)}
                   >
+                    <option value="">— Chọn trạng thái quan sát thực tế —</option>
                     {Object.entries(EMOTIONAL_STATE_META).map(([k, meta]) => (
                       <option key={k} value={k}>{meta.label}</option>
                     ))}
@@ -1041,6 +1063,7 @@ export function ResidentsPage() {
                     value={psySocialComm}
                     onChange={(e) => setPsySocialComm(e.target.value as any)}
                   >
+                    <option value="">— Chọn mức độ giao tiếp thực tế —</option>
                     {Object.entries(SOCIAL_COMMUNICATION_META).map(([k, meta]) => (
                       <option key={k} value={k}>{meta.label}</option>
                     ))}
@@ -1054,6 +1077,7 @@ export function ResidentsPage() {
                     value={psyCognitive}
                     onChange={(e) => setPsyCognitive(e.target.value as any)}
                   >
+                    <option value="">— Chọn quan sát nhận thức —</option>
                     <option value="ALERT">Tỉnh táo, nhận thức tốt</option>
                     <option value="MILD_FORGETFUL">Giảm nhớ ngắn hạn nhẹ</option>
                     <option value="MODERATE_IMPAIRMENT">Suy giảm nhận thức trung bình</option>
@@ -1068,7 +1092,8 @@ export function ResidentsPage() {
                     value={psySleep}
                     onChange={(e) => setPsySleep(e.target.value as any)}
                   >
-                    <option value="GOOD">Giấc ngủ ngon, ngủ sâu 7-8 tiếng</option>
+                    <option value="">— Chọn ghi nhận giấc ngủ —</option>
+                    <option value="GOOD">Giấc ngủ tốt</option>
                     <option value="INTERRUPTED">Giấc ngủ chập chờn, hay tỉnh giấc</option>
                     <option value="INSOMNIA">Mất ngủ, khó đi vào giấc ngủ</option>
                     <option value="NIGHT_WANDERING">Hay đi lại ban đêm (Chờn vờn)</option>
@@ -1080,7 +1105,7 @@ export function ResidentsPage() {
                 <span className="field-label">Ghi chú diễn biến cảm xúc chi tiết</span>
                 <input
                   className="text-input"
-                  placeholder="VD: Cụ vui vẻ sau khi con thăm, thích nghe nhạc cổ điển..."
+                  placeholder="Ghi nhận diễn biến cảm xúc thực tế nếu có"
                   value={psyEmotionalNotes}
                   onChange={(e) => setPsyEmotionalNotes(e.target.value)}
                 />
@@ -1091,7 +1116,7 @@ export function ResidentsPage() {
                 <textarea
                   className="text-input"
                   rows={2}
-                  placeholder="VD: Tinh thần cụ ổn định, hòa nhập tốt với tập thể..."
+                  placeholder="Nhập nhận xét chuyên môn dựa trên quan sát và dữ liệu thực tế"
                   value={psyConclusion}
                   onChange={(e) => setPsyConclusion(e.target.value)}
                   required
@@ -1103,7 +1128,7 @@ export function ResidentsPage() {
                 <textarea
                   className="text-input"
                   rows={2}
-                  placeholder="VD: Đề xuất gia đình tăng cường gọi video call buổi tối..."
+                  placeholder="Nhập kế hoạch hoặc khuyến nghị thực tế cho kỳ tiếp theo"
                   value={psyRecommendations}
                   onChange={(e) => setPsyRecommendations(e.target.value)}
                 />

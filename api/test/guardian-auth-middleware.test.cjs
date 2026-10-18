@@ -23,14 +23,25 @@ function claims(overrides = {}) {
     exp: now() + 3600, nbf: now() - 1, ...overrides };
 }
 
-async function invoke({ authorization, rows = [{ actor_id: 'staff-ci-1', actor_role: 'CAREGIVER' }],
+async function invoke({ authorization, rows = [{ actor_id: 'staff-ci-1', actor_role: 'CAREGIVER' }], staffRows = [{ actor_id: 'staff-ci-1' }],
   path = '/api/residents', spoof = {} } = {}) {
   let queryCount = 0;
   let nextCount = 0;
-  const db = { query: async (_sql, params) => {
+  const db = { query: async (sql, params) => {
     queryCount++;
-    assert.deepEqual(params, ['session-ci-1', 'staff-ci-1', 'CAREGIVER']);
-    return { rows };
+    if (queryCount === 1) {
+      assert.match(sql, /FROM auth_sessions/);
+      assert.match(sql, /revoked_at IS NULL/);
+      assert.match(sql, /expires_at > now\(\)/);
+      assert.deepEqual(params, ['session-ci-1', 'staff-ci-1', 'CAREGIVER']);
+      return { rows };
+    }
+    assert.match(sql, /FROM staff_actors/);
+    assert.match(sql, /status = 'ACTIVE'/);
+    assert.match(sql, /primary_operational_role = \$2/);
+    assert.deepEqual(params, ['staff-ci-1', 'CAREGIVER', 'session-ci-1']);
+    assert.match(sql, /updated_at <= \(SELECT issued_at FROM auth_sessions/);
+    return { rows: staffRows };
   }};
   const middleware = new ProductionAuthMiddleware(db);
   const req = {
@@ -60,7 +71,7 @@ test('AUTH-MW01 active staff session passes and sets server-derived actor header
     spoof: { 'x-actor-id': 'forged', 'x-actor-role': 'SUPERVISOR' } });
   assert.equal(r.error, undefined);
   assert.equal(r.nextCount, 1);
-  assert.equal(r.queryCount, 1);
+  assert.equal(r.queryCount, 2);
   assert.equal(r.req.headers['x-actor-id'], 'staff-ci-1');
   assert.equal(r.req.headers['x-actor-role'], 'CAREGIVER');
   assert.equal(r.req.headers['x-auth-session-id'], 'session-ci-1');
@@ -97,3 +108,13 @@ test('AUTH-MW11 explicitly public health path is exempt from staff JWT check', a
   assert.equal(r.nextCount, 1);
   assert.equal(r.queryCount, 0);
 });
+
+for (const reason of ['disabled account', 'changed role']) {
+  test('AUTH-MW12 stale session denied: ' + reason, async () => {
+    const r = await invoke({ authorization: 'Bearer ' + token(claims()), staffRows: [] });
+    assert.ok(r.error);
+    assert.equal(r.error.getStatus(), 401);
+    assert.equal(r.nextCount, 0);
+    assert.equal(r.queryCount, 2);
+  });
+}

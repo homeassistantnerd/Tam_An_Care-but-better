@@ -1,7 +1,9 @@
+import { CANONICAL_ACTOR_ROLES, CanonicalActorRole } from './actor-roles';
 import {
   Injectable,
   NestMiddleware,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import {
@@ -13,11 +15,7 @@ import {
   DatabaseService,
 } from '../database/database.service';
 
-type ActorRole =
-  | 'CAREGIVER'
-  | 'NURSE'
-  | 'CARE_MANAGER'
-  | 'SUPERVISOR';
+type ActorRole = CanonicalActorRole;
 
 interface JwtPayload {
   sub?: unknown;
@@ -29,6 +27,7 @@ interface JwtPayload {
 
 interface HttpRequest {
   originalUrl: string;
+  method?: string;
 
   headers: Record<
     string,
@@ -44,13 +43,7 @@ type HttpResponse = unknown;
 
 type Next = () => void;
 
-const VALID_ROLES =
-  new Set<ActorRole>([
-    'CAREGIVER',
-    'NURSE',
-    'CARE_MANAGER',
-    'SUPERVISOR',
-  ]);
+const VALID_ROLES = new Set<ActorRole>(CANONICAL_ACTOR_ROLES);
 
 function decode(
   value: string,
@@ -120,6 +113,11 @@ function verifyHs256(
     );
   }
 
+  if (!header || typeof header !== 'object' || Array.isArray(header) ||
+      !payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new UnauthorizedException('Invalid authentication token');
+  }
+
   if (
     header.alg !== 'HS256'
   ) {
@@ -156,20 +154,15 @@ function verifyHs256(
       Date.now() / 1000,
     );
 
-  if (
-    typeof payload.exp ===
-      'number' &&
-    payload.exp <= now
-  ) {
+  if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp) || payload.exp <= now) {
     throw new UnauthorizedException(
       'Authentication token expired',
     );
   }
 
   if (
-    typeof payload.nbf ===
-      'number' &&
-    payload.nbf > now
+    payload.nbf !== undefined &&
+    (typeof payload.nbf !== 'number' || !Number.isFinite(payload.nbf) || payload.nbf > now)
   ) {
     throw new UnauthorizedException(
       'Authentication token not active',
@@ -301,6 +294,25 @@ export class ProductionAuthMiddleware
     const sessionId =
       payload.jti as string;
 
+    const method = req.method ?? 'GET';
+    const guardianPath = /^\/api\/family-portal\/residents(?:\/[^/]+)?\/?$/.test(path);
+    if (actorRole === 'GUARDIAN' && !(method === 'GET' && guardianPath) &&
+        !(method === 'POST' && path === '/api/auth/logout')) {
+      throw new ForbiddenException('Guardian cannot use staff endpoints');
+    }
+    if (actorRole !== 'GUARDIAN' && guardianPath) {
+      throw new ForbiddenException('Guardian identity is required');
+    }
+    if (actorRole === 'PSYCHOLOGIST' || actorRole === 'SOCIAL_WORKER') {
+      const carePath = /^\/api\/operations\/residents\/[^/]+\/care-view\/?$/.test(path);
+      const residentPath = /^\/api\/residents\/[^/]+\/?$/.test(path);
+      if (!(method === 'GET' && (carePath || residentPath || path === '/api/operations/residents/assigned')) &&
+          !(method === 'POST' && path === '/api/auth/logout')) {
+        throw new ForbiddenException('Specialist endpoint is outside the permitted scope');
+      }
+    }
+
+
     const session =
       await this.db.query<{
         actor_id: string;
@@ -330,6 +342,30 @@ export class ProductionAuthMiddleware
     ) {
       throw new UnauthorizedException(
         'Authentication session is not active',
+      );
+    }
+
+
+    // Revalidate the current staff account and role.
+    const currentStaff = await this.db.query<{
+      actor_id: string;
+    }>(
+      `
+        SELECT actor_id
+        FROM staff_actors
+        WHERE actor_id = $1
+          AND status = 'ACTIVE'
+          AND primary_operational_role = $2
+          AND updated_at <= (SELECT issued_at FROM auth_sessions
+            WHERE session_id = $3 AND revoked_at IS NULL AND expires_at > now())
+        LIMIT 1
+      `,
+      [actorId, actorRole, sessionId],
+    );
+
+    if (currentStaff.rows.length !== 1) {
+      throw new UnauthorizedException(
+        'Staff account or role is not active',
       );
     }
 

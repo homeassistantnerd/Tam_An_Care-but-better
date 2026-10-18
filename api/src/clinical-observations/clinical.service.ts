@@ -1,3 +1,5 @@
+import { ForbiddenException } from '@nestjs/common';
+import { ResidentAccessScopeService, ResidentAccessHumanRole } from '../resident-access-scope/resident-access-scope.service';
 import {
   Injectable,
 } from '@nestjs/common';
@@ -36,6 +38,7 @@ export class ClinicalService {
 
     private readonly authorization:
       ClinicalAuthorizationService,
+    private readonly scope: ResidentAccessScopeService,
   ) {}
 
 
@@ -154,6 +157,11 @@ export class ClinicalService {
             'Clinical aggregate not found.',
           );
         }
+
+        const predicate = this.scope.sqlPredicate('r', actorId, actorRole as ResidentAccessHumanRole);
+        const allowed = await client.query(`SELECT 1 FROM residents r WHERE (${predicate.sql})
+          AND r.resident_id = $${predicate.nextParameter}`, [...predicate.params, current.resident_id]);
+        if (allowed.rows.length !== 1) throw new ForbiddenException('Resident access denied');
 
         this.authorization.authorize(
           action,

@@ -229,6 +229,7 @@ export const MOCK_RESIDENT_CONTEXTS: ResidentContextResponse[] = [
 const LS_RESIDENTS_KEY = 'taman_resident_contexts_v1';
 
 export function getStoredResidents(): ResidentContextResponse[] {
+  if (import.meta.env.PROD) return [];
   try {
     const raw = localStorage.getItem(LS_RESIDENTS_KEY);
     if (raw) {
@@ -280,13 +281,15 @@ export async function listResidents(
 ): Promise<ResidentContextResponse[]> {
   try {
     const res = await apiRequest<ResidentContextResponse[]>(
-      '/api/residents',
+      actor && ['NURSE', 'CAREGIVER', 'PSYCHOLOGIST', 'SOCIAL_WORKER'].includes(actor.actorRole)
+        ? '/api/operations/residents/assigned' : '/api/residents',
       {
         actor,
       },
     );
-    if (res && res.length > 0) return res;
+    if (res) return res;
   } catch (error) {
+    if (import.meta.env.PROD) throw error;
     console.warn('[TamAnCare API] Offline/Fallback mode active for listResidents:', error);
   }
   return getStoredResidents();
@@ -304,6 +307,7 @@ export async function getResident(
       },
     );
   } catch (error) {
+    if (import.meta.env.PROD) throw error;
     console.warn('[TamAnCare API] Offline/Fallback mode active for getResident:', error);
     const allResidents = getStoredResidents();
     const found = allResidents.find((r) => r.resident.residentId === residentId);
@@ -324,6 +328,7 @@ export async function getResidentCareView(
       },
     );
   } catch (error) {
+    if (import.meta.env.PROD) throw error;
     console.warn('[TamAnCare API] Offline/Fallback mode active for getResidentCareView:', error);
     const allResidents = getStoredResidents();
     const foundCtx = allResidents.find(
@@ -643,4 +648,11 @@ export async function getResidentCareView(
       },
     };
   }
+}
+
+export function recordResidentVitals(residentId: string, actor: HumanActorSession,
+  measurements: Record<string, number>, note: string) {
+  return apiRequest<{ recorded: string[] }>(`/api/residents/${encodeURIComponent(residentId)}/vital-signs`, {
+    actor, method: 'POST', body: JSON.stringify({ measurements, note, measuredAt: new Date().toISOString() }),
+  });
 }

@@ -1,3 +1,4 @@
+import { GuardianResidentPanel } from './GuardianResidentPanel';
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from '../../auth/ActorContext';
@@ -90,6 +91,11 @@ function formatPeriodDate(iso: string): string {
 
 export default function FamilyPortalPage() {
   const { actor } = useActor();
+  return actor?.actorRole === 'GUARDIAN' ? <GuardianResidentPanel actor={actor} /> : <StaffFamilyPortalPage />;
+}
+
+function StaffFamilyPortalPage() {
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<'health' | 'leave' | 'nutrition' | 'visit' | 'supplies' | 'psychology' | 'fee-notice' | 'family-meal'>('health');
@@ -171,7 +177,7 @@ export default function FamilyPortalPage() {
     if (actor.actorRole === 'GUARDIAN') {
       const assignedIds = new Set(getAssignedResidentIdsForGuardian(actor.actorId, actor.displayName));
       const filtered = list.filter((r) => assignedIds.has(r.resident.residentId));
-      return filtered.length > 0 ? filtered : list.slice(0, 1);
+      return filtered;
     }
 
     if (actor.actorRole === 'CAREGIVER') {

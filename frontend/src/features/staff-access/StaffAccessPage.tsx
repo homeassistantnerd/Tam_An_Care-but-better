@@ -19,6 +19,7 @@ import {
   listResidentAccessAssignments,
   revokeResidentAccessAssignment,
   type AssignmentRole,
+  type ResidentAccessScope,
 } from '../../api/resident-access-administration';
 
 import { listResidents } from '../../api/residents';
@@ -59,6 +60,28 @@ const STATUS_LABEL: Record<string, string> = {
   SUSPENDED: 'Tạm khóa',
   ARCHIVED: 'Đã lưu trữ',
 };
+
+function accessScopeForAssignmentRole(
+  role: AssignmentRole,
+): ResidentAccessScope {
+  if (role === 'CAREGIVER') {
+    return 'DIRECT_CARE';
+  }
+
+  if (role === 'NURSE') {
+    return 'CLINICAL_CARE';
+  }
+
+  return 'PSYCHOSOCIAL_CARE';
+}
+
+function assignmentRoleLabel(
+  role: AssignmentRole | string,
+): string {
+  return ROLE_LABELS[
+    role as keyof typeof ROLE_LABELS
+  ] || role;
+}
 
 function errorText(error: unknown, fallback: string): string {
   if (error instanceof ApiError) return error.message;
@@ -384,6 +407,15 @@ export function StaffAccessPage() {
   const resetPasswordMutation = useMutation({
     mutationFn: async () => {
       if (!actor || !showResetModal) throw new Error('Chưa chọn tài khoản');
+
+      // PROTECTED_ADMIN_ACCOUNT
+      if (showResetModal.actorId === 'TA-DIR-001') {
+        throw new Error(
+          'Tài khoản quản trị TA-DIR-001 được bảo vệ. '
+          + 'Chỉ có thể đổi mật khẩu bằng chức năng Đổi mật khẩu cá nhân.',
+        );
+      }
+
       return resetStaffPassword(actor, {
         actorId: showResetModal.actorId,
         newPassword: newResetPassword,
@@ -453,7 +485,9 @@ export function StaffAccessPage() {
         residentId: residentId.trim(),
         actorId: assignmentActorId.trim(),
         actorRole: assignmentRole,
-        accessScope: 'CARE',
+        accessScope: accessScopeForAssignmentRole(
+          assignmentRole,
+        ),
       });
     },
     onSuccess: async () => {
@@ -528,8 +562,19 @@ export function StaffAccessPage() {
   }, [staffQuery.data]);
 
   const assignableStaff = useMemo(() => {
+    const allowedRoles = new Set<string>([
+      'CAREGIVER',
+      'NURSE',
+      'PSYCHOLOGIST',
+      'SOCIAL_WORKER',
+    ]);
+
     return (staffQuery.data ?? []).filter(
-      (item) => item.status === 'ACTIVE' && (item.primaryOperationalRole === 'CAREGIVER' || item.primaryOperationalRole === 'NURSE')
+      (item) =>
+        item.status === 'ACTIVE' &&
+        allowedRoles.has(
+          item.primaryOperationalRole,
+        ),
     );
   }, [staffQuery.data]);
 
@@ -541,7 +586,7 @@ export function StaffAccessPage() {
 - Vai trò: ${ROLE_LABEL[staff.primaryOperationalRole] || staff.primaryOperationalRole}
 - Mã nhân viên: ${staff.staffCode}
 - Tên đăng nhập / ID: ${staff.actorId}
-- Mật khẩu khởi tạo: ${staff.initialPassword || 'TamAn@2026#Secure'}
+- Mật khẩu tạm thời: ${staff.initialPassword || '[KHÔNG CÒN KHẢ DỤNG — VUI LÒNG ĐẶT LẠI MẬT KHẨU]'}
 - Đường link đăng nhập: ${window.location.origin}
 - Lưu ý: Vui lòng đổi mật khẩu cá nhân ngay trong lần đầu tiên đăng nhập hệ thống để đảm bảo an toàn bảo mật.`;
 
@@ -582,7 +627,7 @@ export function StaffAccessPage() {
       `"${residentMap.get(item.residentId) || item.residentId}"`,
       `"${staffMap.get(item.actorId) || item.actorId}"`,
       ROLE_LABELS[item.actorRole as keyof typeof ROLE_LABELS] || item.actorRole,
-      item.accessScope || 'Hồ sơ y tế & ADL',
+      item.accessScope,
       item.assignedAt ? new Date(item.assignedAt).toLocaleDateString('vi-VN') : '',
     ]);
 
@@ -961,10 +1006,29 @@ export function StaffAccessPage() {
                                   {/* Reset Password button */}
                                   <button
                                     onClick={() => {
+                                      if (isAdminAccount) {
+                                        setFeedback(
+                                          '🔒 TA-DIR-001 là tài khoản quản trị được bảo vệ. '
+                                          + 'Hãy dùng chức năng Đổi mật khẩu cá nhân.',
+                                        );
+                                        return;
+                                      }
+                                      if (isAdminAccount) {
+                                        setFeedback(
+                                          '🔒 TA-DIR-001 là tài khoản quản trị được bảo vệ. '
+                                          + 'Hãy dùng chức năng Đổi mật khẩu cá nhân.',
+                                        );
+                                        return;
+                                      }
                                       setNewResetPassword(generateSecurePassword());
                                       setShowResetModal(item);
                                     }}
-                                    title="Đặt lại mật khẩu"
+                                    title={
+                                      isAdminAccount
+                                        ? 'TA-DIR-001 được bảo vệ — sử dụng Đổi mật khẩu cá nhân'
+                                        : 'Đặt lại mật khẩu'
+                                    }
+                                    disabled={isAdminAccount}
                                     style={{
                                       background: '#eff6ff',
                                       border: '1px solid #bfdbfe',
@@ -1155,10 +1219,29 @@ export function StaffAccessPage() {
                           <button
                             type="button"
                             onClick={() => {
+                              if (isAdminAccount) {
+                                setFeedback(
+                                  '🔒 TA-DIR-001 là tài khoản quản trị được bảo vệ. '
+                                  + 'Hãy dùng chức năng Đổi mật khẩu cá nhân.',
+                                );
+                                return;
+                              }
+                              if (isAdminAccount) {
+                                setFeedback(
+                                  '🔒 TA-DIR-001 là tài khoản quản trị được bảo vệ. '
+                                  + 'Hãy dùng chức năng Đổi mật khẩu cá nhân.',
+                                );
+                                return;
+                              }
                               setNewResetPassword(generateSecurePassword());
                               setShowResetModal(item);
                             }}
-                            title="Đặt lại mật khẩu"
+                            title={
+                                      isAdminAccount
+                                        ? 'TA-DIR-001 được bảo vệ — sử dụng Đổi mật khẩu cá nhân'
+                                        : 'Đặt lại mật khẩu'
+                                    }
+                                    disabled={isAdminAccount}
                             style={{
                               background: '#eff6ff',
                               border: '1px solid #bfdbfe',
@@ -1251,7 +1334,7 @@ export function StaffAccessPage() {
                   ➕ Chỉ Định Nhân Sự Phụ Trách Hồ Sơ Người Cao Tuổi
                 </h2>
                 <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: '#64748b' }}>
-                  Chỉ định Nhân viên y tế hoặc Nhân viên chăm sóc phụ trách cụ thể từng cụ để mở quyền truy cập hồ sơ y tế và nhật ký chăm sóc.
+                  Chỉ định nhân sự chuyên môn phụ trách từng người cao tuổi và cấp phạm vi tiếp cận hồ sơ phù hợp với đúng vai trò nghiệp vụ.
                 </p>
               </div>
               <span style={{
@@ -1301,9 +1384,18 @@ export function StaffAccessPage() {
                       const next = e.target.value;
                       setAssignmentActorId(next);
                       const selected = assignableStaff.find((item) => item.actorId === next);
-                      if (selected) {
-                        if (selected.primaryOperationalRole === 'NURSE') setAssignmentRole('NURSE');
-                        else setAssignmentRole('CAREGIVER');
+                      if (
+                        selected &&
+                        [
+                          'CAREGIVER',
+                          'NURSE',
+                          'PSYCHOLOGIST',
+                          'SOCIAL_WORKER',
+                        ].includes(
+                          selected.primaryOperationalRole,
+                        )
+                      ) {
+                        setAssignmentRole(selected.primaryOperationalRole as AssignmentRole);
                       }
                     }}
                   >
@@ -1326,8 +1418,10 @@ export function StaffAccessPage() {
                     value={assignmentRole}
                     onChange={(e) => setAssignmentRole(e.target.value as AssignmentRole)}
                   >
-                    <option value="CAREGIVER">Nhân viên chăm sóc</option>
-                    <option value="NURSE">Nhân viên y tế</option>
+                    <option value="CAREGIVER">Nhân viên Chăm sóc</option>
+                    <option value="NURSE">Nhân viên Y tế</option>
+                    <option value="PSYCHOLOGIST">Nhân viên Tâm lý – CTXH</option>
+                    <option value="SOCIAL_WORKER">Nhân viên Tâm lý – CTXH</option>
                   </select>
                 </div>
 
@@ -1455,7 +1549,7 @@ export function StaffAccessPage() {
                                 color: a.actorRole === 'NURSE' ? '#1e40af' : '#166534',
                                 border: `1px solid ${a.actorRole === 'NURSE' ? '#93c5fd' : '#86efac'}`,
                               }}>
-                                {a.actorRole === 'NURSE' ? '🩺 Nhân viên y tế' : '🤝 Nhân viên chăm sóc'}
+                                {assignmentRoleLabel(a.actorRole)}
                               </span>
                             </td>
                             <td style={{ padding: '0.55rem 0.75rem' }}>
@@ -1553,7 +1647,7 @@ export function StaffAccessPage() {
                                       color: group.actorRole === 'NURSE' ? '#1e40af' : '#166534',
                                       border: `1px solid ${group.actorRole === 'NURSE' ? '#93c5fd' : '#86efac'}`,
                                     }}>
-                                      {group.actorRole === 'NURSE' ? '🩺 Nhân viên y tế' : '🤝 Nhân viên chăm sóc'}
+                                      {assignmentRoleLabel(group.actorRole)}
                                     </span>
                                   </td>
                                 ) : null}
@@ -2389,19 +2483,22 @@ export function StaffAccessPage() {
                   value={formRole}
                   onChange={(e) => handleRoleChangeInForm(e.target.value as HumanActorRole)}
                 >
-                  {Object.entries(ROLE_LABELS)
-                    .filter(([roleKey]) => {
-                      // Chỉ Admin mới được tạo tài khoản ADMIN
-                      if (!isAdmin && roleKey === 'ADMIN') return false;
-                      // Nếu không phải Ban Giám đốc hoặc Admin, KHÔNG hiển thị vai trò SUPERVISOR
-                      if (!isDirector && roleKey === 'SUPERVISOR') return false;
-                      return true;
-                    })
-                    .map(([roleKey, roleName]) => (
-                      <option key={roleKey} value={roleKey}>
-                        {roleName} ({roleKey})
-                      </option>
-                    ))}
+                  <option value="ADMIN">Quản trị hệ thống</option>
+                  <option value="SUPERVISOR">Ban Giám đốc</option>
+                  <option value="CARE_MANAGER">Quản lý chung</option>
+                  <option value="MEDICAL_HEAD">Phụ trách Y tế</option>
+                  <option value="NURSE">Nhân viên Y tế</option>
+                  <option value="CAREGIVER">Nhân viên Chăm sóc</option>
+                  <option value="NUTRITIONIST">Nhân viên Dinh dưỡng</option>
+                  <option value="ACCOUNTANT">Kế toán</option>
+                  <option value="RECEPTIONIST">Nhân viên Lễ tân</option>
+                  <option value="PSYCHOLOGIST">Nhân viên Tâm lý – CTXH</option>
+                  <option value="SOCIAL_WORKER">Nhân viên Tâm lý – CTXH</option>
+                  <option value="REHABILITATION_SPECIALIST">Nhân viên Phục hồi chức năng</option>
+                  <option value="COMMUNICATIONS">Nhân viên Truyền thông / CSKH</option>
+                  <option value="HOUSEKEEPING">Nhân viên Tạp vụ</option>
+                  <option value="SECURITY">Bảo vệ</option>
+                  <option value="GUARDIAN">Thân nhân / Giám hộ</option>
                 </select>
                 {!isAdmin && (
                   <div style={{ fontSize: '0.74rem', color: '#b45309', marginTop: '0.2rem' }}>
@@ -2629,9 +2726,9 @@ export function StaffAccessPage() {
                   {showHandoverModal.actorId}
                 </div>
 
-                <div style={{ fontSize: '0.78rem', color: '#065f46', fontWeight: 600, marginTop: '0.5rem' }}>MẬT KHẨU KHỞI TẠO:</div>
+                <div style={{ fontSize: '0.78rem', color: '#065f46', fontWeight: 600, marginTop: '0.5rem' }}>MẬT KHẨU TẠM THỜI ĐỂ BÀN GIAO:</div>
                 <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#166534', fontFamily: 'monospace', margin: '0.2rem 0' }}>
-                  {showHandoverModal.initialPassword || 'TamAn@2026#Secure'}
+                  {showHandoverModal.initialPassword || 'Không còn khả dụng — vui lòng đặt lại mật khẩu để bàn giao lại'}
                 </div>
               </div>
 
@@ -2896,7 +2993,7 @@ export function StaffAccessPage() {
                       color: assignmentRole === 'NURSE' ? '#1e40af' : '#166534',
                       border: `1px solid ${assignmentRole === 'NURSE' ? '#93c5fd' : '#86efac'}`,
                     }}>
-                      {assignmentRole === 'NURSE' ? '🩺 Nhân viên y tế' : '🤝 Nhân viên chăm sóc'}
+                      {assignmentRoleLabel(assignmentRole)}
                     </span>
                   </span>
 
@@ -2908,7 +3005,7 @@ export function StaffAccessPage() {
               </div>
 
               <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.82rem', color: '#92400e', background: '#fef9c3', border: '1px solid #fde68a', borderRadius: '0.4rem', padding: '0.6rem 0.8rem' }}>
-                ⚠️ Sau khi xác nhận, nhân viên này sẽ có quyền truy cập hồ sơ y tế và nhật ký chăm sóc của người cao tuổi nêu trên.
+                ⚠️ Sau khi xác nhận, nhân sự này chỉ được tiếp cận hồ sơ của người cao tuổi theo đúng phạm vi chuyên môn được cấp cho vai trò.
               </p>
 
               {/* Action buttons */}

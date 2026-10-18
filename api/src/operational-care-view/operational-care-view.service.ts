@@ -21,7 +21,11 @@ type ActorInput = {
 type HumanRole =
   | 'CAREGIVER'
   | 'NURSE'
-  | 'SUPERVISOR';
+  | 'PSYCHOLOGIST'
+  | 'SOCIAL_WORKER'
+  | 'SUPERVISOR'
+  | 'ADMIN'
+  | 'CARE_MANAGER';
 
 type OperationalScope =
   | 'OPERATIONAL'
@@ -73,17 +77,7 @@ export class OperationalCareViewService {
       );
     }
 
-    const isAllowedRole =
-      normalizedRole === 'CAREGIVER' ||
-      normalizedRole === 'NURSE' ||
-      normalizedRole === 'SUPERVISOR' ||
-      normalizedRole === 'CARE_MANAGER' ||
-      normalizedRole === 'ADMIN' ||
-      normalizedRole === 'RECEPTIONIST' ||
-      normalizedRole === 'GUARDIAN' ||
-      normalizedRole === 'NUTRITIONIST' ||
-      normalizedRole === 'PHYSICAL_THERAPIST' ||
-      normalizedRole === 'DIRECTOR';
+    const isAllowedRole = ['CAREGIVER', 'NURSE', 'SUPERVISOR', 'ADMIN', 'CARE_MANAGER', 'PSYCHOLOGIST', 'SOCIAL_WORKER'].includes(normalizedRole);
 
     if (!isAllowedRole) {
       throw new ForbiddenException(
@@ -177,7 +171,7 @@ export class OperationalCareViewService {
         row.display_name,
 
       dateOfBirth:
-        role === 'CAREGIVER'
+        !['NURSE', 'SUPERVISOR', 'ADMIN', 'CARE_MANAGER'].includes(role)
           ? undefined
           : row.date_of_birth,
 
@@ -295,7 +289,7 @@ export class OperationalCareViewService {
         row.verified_at,
     };
 
-    if (role === 'CAREGIVER') {
+    if (!['NURSE', 'SUPERVISOR', 'ADMIN', 'CARE_MANAGER'].includes(role)) {
       return base;
     }
 
@@ -349,7 +343,7 @@ export class OperationalCareViewService {
         row.updated_at,
     };
 
-    if (role === 'CAREGIVER') {
+    if (!['NURSE', 'SUPERVISOR', 'ADMIN', 'CARE_MANAGER'].includes(role)) {
       return common;
     }
 
@@ -415,7 +409,7 @@ export class OperationalCareViewService {
         row.updated_at,
     };
 
-    if (role === 'CAREGIVER') {
+    if (!['NURSE', 'SUPERVISOR', 'ADMIN', 'CARE_MANAGER'].includes(role)) {
       return common;
     }
 
@@ -469,7 +463,7 @@ export class OperationalCareViewService {
         row.updated_at,
     };
 
-    if (role === 'CAREGIVER') {
+    if (!['NURSE', 'SUPERVISOR', 'ADMIN', 'CARE_MANAGER'].includes(role)) {
       return common;
     }
 
@@ -802,8 +796,7 @@ export class OperationalCareViewService {
           'CANONICAL_RESIDENT_SCOPE',
 
         redactionApplied:
-          actor.actorRole
-            === 'CAREGIVER',
+          !['NURSE', 'SUPERVISOR', 'ADMIN', 'CARE_MANAGER'].includes(actor.actorRole),
       },
 
       limits: {

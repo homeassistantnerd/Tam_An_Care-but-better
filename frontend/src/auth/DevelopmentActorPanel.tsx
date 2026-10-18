@@ -3,12 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './ActorContext';
 import {
   fetchActiveStaff,
-  resolveStaffActor,
+  authenticateActor,
   ActiveStaffMember,
   getStoredAdminPassword,
   setStoredAdminPassword,
-  verifyAdminPassword,
 } from '../api/auth';
+import { changeSelfPassword } from '../api/staff-actors';
 import { ROLE_LABELS } from './role-policy';
 import { recordSystemAuditLog } from '../api/audit-log';
 
@@ -50,6 +50,7 @@ export function DevelopmentActorPanel() {
   const { data: staffList, isLoading } = useQuery({
     queryKey: ['auth-active-staff'],
     queryFn: fetchActiveStaff,
+    enabled: !import.meta.env.PROD,
   });
 
   const allAccounts = [
@@ -65,7 +66,7 @@ export function DevelopmentActorPanel() {
     setLoginFeedback(null);
 
     const userStr = loginIdentifier.trim();
-    const passStr = loginPassword.trim();
+    const passStr = loginPassword;
 
     if (!userStr) {
       setLoginFeedback({ text: '❌ Vui lòng nhập Tên đăng nhập hoặc Mã nhân viên.', isError: true });
@@ -75,37 +76,8 @@ export function DevelopmentActorPanel() {
     setIsSubmitting(true);
 
     try {
-      const q = userStr.toLowerCase();
-
-      // Check if user is attempting Admin login
-      if (q === 'admin' || q === 'admin-001' || q === 'adm-001' || q === 'staff-admin-001') {
-        const isValidAdminPass = await verifyAdminPassword(passStr);
-        if (!isValidAdminPass) {
-          setLoginFeedback({
-            text: '❌ Mật khẩu Quản trị viên (Admin) không chính xác.',
-            isError: true,
-          });
-          setIsSubmitting(false);
-          return;
-        }
-
-        setActor({
-          actorId: 'Admin',
-          actorRole: 'ADMIN',
-          displayName: 'Quản Trị Viên Tối Cao (Admin)',
-        });
-        setLoginFeedback({
-          text: '✅ Đăng nhập Quản trị viên (Admin) thành công!',
-          isError: false,
-        });
-        setLoginPassword('');
-        setIsSubmitting(false);
-        setTimeout(() => setLoginFeedback(null), 4000);
-        return;
-      }
-
-      // Resolving regular Staff Member or Guardian by Staff Code / ID
-      const resolved = await resolveStaffActor(userStr);
+      const resolved = await authenticateActor(userStr, passStr);
+      queryClient.clear();
 
       setActor({
         actorId: resolved.actorId,
@@ -133,6 +105,15 @@ export function DevelopmentActorPanel() {
   const handleChangeAdminPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setChangePasswordFeedback(null);
+    if (import.meta.env.PROD) {
+      if (!actor) return;
+      try {
+        await changeSelfPassword(actor, currentAdminPasswordInput, newAdminPasswordInput);
+        clearActor();
+        setChangePasswordFeedback('Đã đổi mật khẩu. Vui lòng đăng nhập lại.');
+      } catch (error) { setChangePasswordFeedback(error instanceof Error ? error.message : 'Không thể đổi mật khẩu.'); }
+      return;
+    }
 
     const currentSaved = getStoredAdminPassword();
     if (currentAdminPasswordInput.trim() !== currentSaved) {
@@ -179,11 +160,6 @@ export function DevelopmentActorPanel() {
   };
 
   const handleSelectStaff = (staff: ActiveStaffMember) => {
-    setActor({
-      actorId: staff.actorId,
-      actorRole: staff.actorRole,
-      displayName: staff.displayName,
-    });
     setLoginIdentifier(staff.staffCode || staff.actorId);
     setLoginFeedback(null);
   };
@@ -299,7 +275,7 @@ export function DevelopmentActorPanel() {
               </div>
 
               <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-                {isAdmin && (
+                {isAdmin && !import.meta.env.PROD && (
                   <button
                     type="button"
                     onClick={() => setShowChangeAdminPasswordModal(true)}
@@ -440,7 +416,7 @@ export function DevelopmentActorPanel() {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || !loginIdentifier.trim()}
+                  disabled={isSubmitting || !loginIdentifier.trim() || !loginPassword}
                   style={{
                     width: '100%',
                     height: '44px',
@@ -502,7 +478,7 @@ export function DevelopmentActorPanel() {
       )}
 
       {/* MODAL CHANGE ADMIN PASSWORD */}
-      {showChangeAdminPasswordModal && (
+      {showChangeAdminPasswordModal && !import.meta.env.PROD && (
         <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1rem' }}>
           <div className="modal-dialog" style={{ background: '#ffffff', borderRadius: '0.75rem', maxWidth: '420px', width: '100%', padding: '1.25rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.6rem', marginBottom: '1rem' }}>

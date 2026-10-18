@@ -25,6 +25,7 @@ export function clearStoredAuthSession():
   window.localStorage.removeItem(
     TOKEN_STORAGE_KEY,
   );
+  window.dispatchEvent(new Event('tamancare-auth-cleared'));
 }
 
 function decodeTokenPayload(

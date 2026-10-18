@@ -45,6 +45,10 @@ export class OperationalWorkEventTypeService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    if (process.env.NODE_ENV === 'production') {
+      await this.database.query('SELECT 1 FROM operational_work_event_types LIMIT 0');
+      return;
+    }
     try {
       await this.database.query(`
         INSERT INTO operational_work_event_types (

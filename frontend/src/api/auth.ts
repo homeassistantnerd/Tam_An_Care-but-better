@@ -1,4 +1,6 @@
-import { API_BASE_URL } from './client';
+import { API_BASE_URL, apiRequest } from './client';
+import { clearStoredAuthSession, readStoredAccessToken, storeAccessToken } from '../auth/session';
+import type { HumanActorSession } from '../types/actor';
 import { HumanActorRole } from '../types/actor';
 import { mockStaffActors } from './staff-actors';
 
@@ -81,6 +83,7 @@ function getLocalStorageCreatedStaff(): ActiveStaffMember[] {
 }
 
 export async function fetchActiveStaff(): Promise<ActiveStaffMember[]> {
+  if (import.meta.env.PROD) return apiRequest<ActiveStaffMember[]>('/api/auth/active-staff');
   const localCreated = getLocalStorageCreatedStaff();
   let baseList: ActiveStaffMember[] = [];
 
@@ -106,6 +109,7 @@ export async function fetchActiveStaff(): Promise<ActiveStaffMember[]> {
 }
 
 export async function resolveStaffActor(actorIdOrCode: string): Promise<ActiveStaffMember> {
+  if (import.meta.env.PROD) throw new Error('Vui lòng đăng nhập bằng mật khẩu qua máy chủ.');
   const rawInput = actorIdOrCode.trim();
   const q = rawInput.toLowerCase();
   const normalizedSearch = q.replace(/^(ta-|nv-|staff-)/, '');
@@ -230,4 +234,21 @@ export async function resolveStaffActor(actorIdOrCode: string): Promise<ActiveSt
 export async function verifyAdminPassword(inputPassword: string): Promise<boolean> {
   const currentPassword = getStoredAdminPassword();
   return inputPassword === currentPassword;
+}
+
+export async function authenticateActor(actorId: string, password: string): Promise<HumanActorSession> {
+  const result = await apiRequest<{ accessToken: string; actor: HumanActorSession }>('/api/auth/login', {
+    method: 'POST', body: JSON.stringify({ actorId, password }),
+  });
+  storeAccessToken(result.accessToken);
+  return result.actor;
+}
+
+export async function logoutCurrentSession(): Promise<void> {
+  const token = readStoredAccessToken();
+  try {
+    if (token) await apiRequest<void>('/api/auth/logout', { method: 'POST' });
+  } finally {
+    clearStoredAuthSession();
+  }
 }

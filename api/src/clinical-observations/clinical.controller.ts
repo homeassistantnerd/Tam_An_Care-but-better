@@ -1,6 +1,9 @@
 import {
   BadRequestException,
   Body,
+  Headers,
+  UnauthorizedException,
+  HttpException,
   Controller,
   InternalServerErrorException,
   Param,
@@ -42,8 +45,12 @@ export class ClinicalController {
 
     @Body()
     input: ClinicalMutationInput,
+    @Headers('x-actor-id') actorId?: string,
+    @Headers('x-actor-role') actorRole?: string,
   ) {
 
+    if (!actorId || !actorRole) throw new UnauthorizedException('Actor context is required');
+    input = { ...input, actorId, actorRole };
     try {
 
       const action =
@@ -97,6 +104,7 @@ export class ClinicalController {
       };
 
     } catch (error) {
+      if (error instanceof HttpException) throw error;
 
       const message =
         error instanceof Error

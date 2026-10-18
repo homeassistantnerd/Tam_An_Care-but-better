@@ -24,45 +24,8 @@ export interface NotificationItem {
 
 const LS_NOTIFICATIONS_KEY = 'taman_inapp_notifications_v1';
 
-const DEFAULT_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'NOTIF-001',
-    type: 'ASSIGNMENT',
-    title: '🛡️ Phân Công Chăm Sóc Mới',
-    message: 'Ban Giám đốc vừa cập nhật phân công phụ trách cư dân cụ Nguyễn Văn An (Phòng 101-G01) cho bạn.',
-    timestamp: new Date(Date.now() - 10 * 60000).toISOString(),
-    isRead: false,
-    targetUrl: '/staff-access',
-  },
-  {
-    id: 'NOTIF-002',
-    type: 'MEDICAL_ALERT',
-    title: '🩺 Cảnh Báo Sinh Hiệu Y Khoa',
-    message: 'Cụ Trần Thị Bình sốt nhẹ 37.8°C lúc 10:00 ca sáng. Nhân viên y tế đã ghi nhận phiếu theo dõi.',
-    timestamp: new Date(Date.now() - 45 * 60000).toISOString(),
-    isRead: false,
-    targetUrl: '/residents',
-  },
-  {
-    id: 'NOTIF-003',
-    type: 'KITCHEN_ALERT',
-    title: '🥗 Lưu Mẫu Thức Ăn HACCP 24H (Tự động)',
-    message: 'Tự động kiểm tra: Mẫu lưu thức ăn Bữa Trưa (SMP-8821) tại tủ mát số 01 đã đủ 24h. Vui lòng hủy mẫu an toàn.',
-    timestamp: new Date(Date.now() - 2 * 3600000).toISOString(),
-    isRead: false,
-    targetUrl: '/kitchen',
-  },
-  {
-    id: 'NOTIF-004',
-    type: 'WORKFORCE_ALERT',
-    title: '⏰ Biên Bản Bàn Giao Ca Trực',
-    message: 'Nhân viên y tế Trần Thị Bích đã nộp biên bản bàn giao ca sáng. Vui lòng kiểm tra & xác nhận.',
-    timestamp: new Date(Date.now() - 4 * 3600000).toISOString(),
-    isRead: true,
-    targetUrl: '/workforce',
-  },
-];
-
+// NO SEED DATA — Production-ready empty state
+const DEFAULT_NOTIFICATIONS: NotificationItem[] = [];
 export function getLocalNotifications(): NotificationItem[] {
   try {
     const raw = localStorage.getItem(LS_NOTIFICATIONS_KEY);
